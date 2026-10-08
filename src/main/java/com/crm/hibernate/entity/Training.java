@@ -31,7 +31,7 @@ public class Training {
     private Date trainingDate;
 
     @Column(name = "training_duration", nullable = false)
-    private Double trainingDuration;
+    private Number trainingDuration;
 
     public Training() {}
 
@@ -47,7 +47,7 @@ public class Training {
     public void setTrainingType(TrainingType trainingType) { this.trainingType = trainingType; }
     public Date getTrainingDate() { return trainingDate; }
     public void setTrainingDate(Date trainingDate) { this.trainingDate = trainingDate; }
-    public Double getTrainingDuration() { return trainingDuration; }
+    public Number getTrainingDuration() { return trainingDuration; }
     public void setTrainingDuration(Double trainingDuration) { this.trainingDuration = trainingDuration; }
 
 

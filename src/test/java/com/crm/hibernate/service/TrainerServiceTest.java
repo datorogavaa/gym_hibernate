@@ -82,7 +82,7 @@ class TrainerServiceTest {
         when(trainingTypeRepository.findById(9L)).thenReturn(Optional.of(newType));
 
         Trainer updated = trainerService.updateProfile("admin", "adminPass", "sam.green",
-                "Sam", "Green", 9L, false);
+                "Sam", "Green", false);
 
         assertEquals("Spring", updated.getSpecialization().getTrainingTypeName());
         assertEquals(false, updated.getUser().getIsActive());
