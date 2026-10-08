@@ -55,7 +55,6 @@ public class AppConfig {
         jpaProperties.setProperty("hibernate.format_sql",
                 env.getProperty("spring.jpa.properties.hibernate.format_sql", "true"));
 
-        jpaProperties.setProperty("jakarta.persistence.schema-generation.import-script", "data.sql");
         em.setJpaProperties(jpaProperties);
         return em;
     }
