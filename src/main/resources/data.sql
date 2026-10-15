@@ -38,3 +38,10 @@ VALUES (2, 1, 1, 'Core Stability', 1, '2026-10-05', 45);
 
 INSERT INTO trainings (id, trainee_id, trainer_id, training_name, training_type_id, training_date, training_duration)
 VALUES (3, 2, 2, 'Vinyasa Flow', 2, '2026-10-02', 90);
+
+
+ALTER TABLE users ALTER COLUMN id RESTART WITH 100;
+ALTER TABLE trainers ALTER COLUMN id RESTART WITH 100;
+ALTER TABLE trainees ALTER COLUMN id RESTART WITH 100;
+ALTER TABLE trainings ALTER COLUMN id RESTART WITH 100;
+ALTER TABLE training_types ALTER COLUMN id RESTART WITH 100;

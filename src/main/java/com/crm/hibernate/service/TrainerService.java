@@ -79,6 +79,7 @@ public class TrainerService {
         trainer.getUser().setLastName(lastName);
         trainer.getUser().setIsActive(isActive);
 
+
         trainerRepository.save(trainer);
         log.info("Updated Trainer profile: {}", targetUsername);
         return trainer;

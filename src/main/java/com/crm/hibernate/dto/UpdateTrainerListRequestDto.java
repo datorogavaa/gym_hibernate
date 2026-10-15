@@ -10,5 +10,5 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UpdateTrainerListRequestDto {
-    private Set<String> trainerUsernames; // Required list of trainer usernames
+    private Set<String> trainerUsernames;
 }

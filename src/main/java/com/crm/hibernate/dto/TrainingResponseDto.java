@@ -13,6 +13,6 @@ public class TrainingResponseDto {
     private String trainingName;
     private Date trainingDate;
     private String trainingType;
-    private Number trainingDuration; // or double/long depending on your entity
+    private Number trainingDuration;
     private String trainerName;
 }

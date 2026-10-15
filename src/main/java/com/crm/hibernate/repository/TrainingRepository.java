@@ -54,25 +54,48 @@ public class TrainingRepository {
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Training> cq = cb.createQuery(Training.class);
         Root<Training> training = cq.from(Training.class);
+
+        training.fetch("trainee", JoinType.INNER)
+                .fetch("user", JoinType.INNER);
+
+        training.fetch("trainingType", JoinType.INNER);
+
         Join<Training, Trainer> trainerJoin = training.join("trainer");
         Join<Trainer, User> trainerUser = trainerJoin.join("user");
         Join<Training, Trainee> traineeJoin = training.join("trainee");
         Join<Trainee, User> traineeUser = traineeJoin.join("user");
 
         List<Predicate> predicates = new ArrayList<>();
-        predicates.add(cb.equal(trainerUser.get("username"), criteria.getTrainerUsername()));
+        predicates.add(cb.equal(
+                trainerUser.get("username"),
+                criteria.getTrainerUsername()
+        ));
 
         if (criteria.getFromDate() != null) {
-            predicates.add(cb.greaterThanOrEqualTo(training.get("trainingDate"), criteria.getFromDate()));
-        }
-        if (criteria.getToDate() != null) {
-            predicates.add(cb.lessThanOrEqualTo(training.get("trainingDate"), criteria.getToDate()));
-        }
-        if (criteria.getTraineeName() != null && !criteria.getTraineeName().isBlank()) {
-            predicates.add(cb.equal(traineeUser.get("firstName"), criteria.getTraineeName()));
+            predicates.add(cb.greaterThanOrEqualTo(
+                    training.get("trainingDate"),
+                    criteria.getFromDate()
+            ));
         }
 
+        if (criteria.getToDate() != null) {
+            predicates.add(cb.lessThanOrEqualTo(
+                    training.get("trainingDate"),
+                    criteria.getToDate()
+            ));
+        }
+
+        if (criteria.getTraineeName() != null
+                && !criteria.getTraineeName().isBlank()) {
+            predicates.add(cb.equal(
+                    traineeUser.get("firstName"),
+                    criteria.getTraineeName()
+            ));
+        }
+
+        cq.select(training).distinct(true);
         cq.where(predicates.toArray(new Predicate[0]));
+
         return em.createQuery(cq).getResultList();
     }
 }

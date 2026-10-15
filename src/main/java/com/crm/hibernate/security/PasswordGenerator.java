@@ -1,9 +1,12 @@
 package com.crm.hibernate.security;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.security.SecureRandom;
 
 @Component
 public class PasswordGenerator {
+    private static final Logger log = LoggerFactory.getLogger(PasswordGenerator.class);
     private static final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private final SecureRandom random = new SecureRandom();
 
@@ -12,6 +15,8 @@ public class PasswordGenerator {
         for (int i = 0; i < 10; i++) {
             sb.append(CHAR_POOL.charAt(random.nextInt(CHAR_POOL.length())));
         }
-        return sb.toString();
+        String password = sb.toString();
+        log.debug("Generated a random password");
+        return password;
     }
 }

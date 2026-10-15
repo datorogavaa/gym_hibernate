@@ -7,28 +7,39 @@ import com.crm.hibernate.entity.Training;
 import com.crm.hibernate.service.TraineeService;
 import com.crm.hibernate.service.TrainerService;
 import com.crm.hibernate.service.TrainingService;
+import com.crm.hibernate.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/trainers")
+@Tag(name = "Trainer API", description = "Trainer profile and assignment operations")
 public class TrainerRestController {
+    private static final Logger log = LoggerFactory.getLogger(TrainerRestController.class);
 
     private final TrainerService trainerService;
-    private final TraineeService traineeService;
     private final TrainingService trainingService;
-    public TrainerRestController(TrainerService trainerService, TraineeService traineeService, TrainingService trainingService) {
+    private final UserService userService;
+    public TrainerRestController(TrainerService trainerService, TrainingService trainingService, UserService userService) {
         this.trainingService = trainingService;
         this.trainerService = trainerService;
-        this.traineeService = traineeService;
+        this.userService = userService;
     }
 
+    @Operation(summary = "Register a trainer", description = "Creates a trainer profile and returns generated credentials")
+    @ApiResponse(responseCode = "200", description = "Created")
     @PostMapping("/create")
     public ResponseEntity<TrainerResponseDto> createTrainer(@RequestBody TrainerRequestDto trainer) {
+        log.info("Creating trainer profile for {} {}", trainer.getFirstName(), trainer.getLastName());
         Trainer createdTrainer = trainerService.createProfile(
                 trainer.getFirstName(),
                 trainer.getLastName(),
@@ -43,17 +54,17 @@ public class TrainerRestController {
     }
 
 
-    // 1. Get Trainer Profile (GET)
+    @Operation(summary = "Get trainer profile", description = "Retrieves a trainer profile after authentication")
+    @ApiResponse(responseCode = "200", description = "Profile retrieved")
     @GetMapping("/{username}")
     public ResponseEntity<TrainerProfileResponseDto> getTrainerProfile(
-            @PathVariable String username,
-            @RequestParam String authUser,
-            @RequestParam String authPass) {
+            @PathVariable("username") String username,
+            @RequestParam("authUser") String authUser,
+            @RequestParam("authPass") String authPass) {
 
-        // Authenticate and fetch trainer
+        log.debug("Loading trainer profile for {}", username);
         Trainer trainer = trainerService.selectProfile(authUser, authPass, username);
 
-        // Map assigned trainees to DTO list
         List<TrainerProfileResponseDto.TraineeDto> traineeDtos = trainer.getTrainees().stream()
                 .map(trainee -> new TrainerProfileResponseDto.TraineeDto(
                         trainee.getUser().getUsername(),
@@ -62,7 +73,6 @@ public class TrainerRestController {
                 ))
                 .toList();
 
-        // Build response
         TrainerProfileResponseDto response = new TrainerProfileResponseDto(
                 trainer.getUser().getUsername(),
                 trainer.getUser().getFirstName(),
@@ -75,15 +85,16 @@ public class TrainerRestController {
         return ResponseEntity.ok(response);
     }
 
-    // 2. Update Trainer Profile (PUT)
-    @PutMapping("/{username}")
+    @Operation(summary = "Update trainer profile", description = "Updates trainer personal data and active status")
+    @ApiResponse(responseCode = "200", description = "Profile updated")
+    @PutMapping("/{username}/update")
     public ResponseEntity<TrainerProfileResponseDto> updateTrainer(
-            @PathVariable String username,
-            @RequestParam String authUser,
-            @RequestParam String authPass,
+            @PathVariable("username") String username,
+            @RequestParam("authUser") String authUser,
+            @RequestParam("authPass") String authPass,
             @RequestBody TrainerUpdateDto updateDto) {
 
-        // 1. Call your service with all required parameters
+        log.info("Updating trainer profile for {}", username);
         Trainer updatedTrainer = trainerService.updateProfile(
                 authUser,
                 authPass,
@@ -93,7 +104,6 @@ public class TrainerRestController {
                 updateDto.getIsActive()
         );
 
-        // 2. Map assigned trainees to DTO list
         List<TrainerProfileResponseDto.TraineeDto> traineeDtos = updatedTrainer.getTrainees().stream()
                 .map(trainee -> new TrainerProfileResponseDto.TraineeDto(
                         trainee.getUser().getUsername(),
@@ -102,7 +112,6 @@ public class TrainerRestController {
                 ))
                 .toList();
 
-        // 3. Build response DTO
         TrainerProfileResponseDto response = new TrainerProfileResponseDto(
                 updatedTrainer.getUser().getUsername(),
                 updatedTrainer.getUser().getFirstName(),
@@ -112,17 +121,16 @@ public class TrainerRestController {
                 traineeDtos
         );
 
-        // 4. Return 200 OK
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{username}/unassigned-trainers")
     public ResponseEntity<List<TrainerSummaryDto>> getUnassignedTrainers(
-            @PathVariable String username,
-            @RequestParam String authUser,
-            @RequestParam String authPass) {
+            @PathVariable("username") String username,
+            @RequestParam("authUser") String authUser,
+            @RequestParam("authPass") String authPass) {
 
-        // Assuming you have or will add this method in your TraineeService / TrainerService
+        log.debug("Loading unassigned trainers for trainee {}", username);
         List<Trainer> unassignedTrainers = trainerService.getUnassignedTrainers(authUser, authPass, username);
 
         List<TrainerSummaryDto> response = unassignedTrainers.stream()
@@ -138,43 +146,17 @@ public class TrainerRestController {
     }
 
 
-    @PutMapping("/{username}/trainers")
-    public ResponseEntity<List<TrainerSummaryDto>> updateTrainersList(
-            @PathVariable String username,
-            @RequestParam String authUser,
-            @RequestParam String authPass,
-            @RequestBody UpdateTrainerListRequestDto requestDto) {
-
-        // 1. Call your existing service method
-        traineeService.updateTrainersList(authUser, authPass, username, requestDto.getTrainerUsernames());
-
-        // 2. Fetch the updated trainee profile to get their new trainer list
-        Trainee trainee = traineeService.selectProfile(authUser, authPass, username);
-
-        // 3. Map to response DTO list
-        List<TrainerSummaryDto> response = trainee.getTrainers().stream()
-                .map(trainer -> new TrainerSummaryDto(
-                        trainer.getUser().getUsername(),
-                        trainer.getUser().getFirstName(),
-                        trainer.getUser().getLastName(),
-                        trainer.getSpecialization()
-                ))
-                .toList();
-
-        return ResponseEntity.ok(response);
-    }
-
 
     @GetMapping("/{username}/trainings")
     public ResponseEntity<List<TrainerTrainingResponseDto>> getTrainerTrainings(
-            @PathVariable String username,
-            @RequestParam String authUser,
-            @RequestParam String authPass,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date periodFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date periodTo,
-            @RequestParam(required = false) String traineeName) {
+            @PathVariable("username") String username,
+            @RequestParam("authUser") String authUser,
+            @RequestParam("authPass") String authPass,
+            @RequestParam(value = "periodFrom", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date periodFrom,
+            @RequestParam(value = "periodTo", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date periodTo,
+            @RequestParam(value = "traineeName", required = false) String traineeName) {
 
-        // 1. Create your criteria object using your exact all-args constructor
+        log.debug("Loading trainings for trainer {}", username);
         TrainerTrainingCriteria criteria = new TrainerTrainingCriteria(
                 username,
                 periodFrom,
@@ -182,35 +164,32 @@ public class TrainerRestController {
                 traineeName
         );
 
-        // 2. Call your service method (handles authentication and criteria filtering)
         List<Training> trainings = trainingService.getTrainerTrainings(authUser, authPass, criteria);
 
-        // 3. Map the Training entities to your Response DTO list
         List<TrainerTrainingResponseDto> response = trainings.stream()
                 .map(training -> new TrainerTrainingResponseDto(
                         training.getTrainingName(),
                         training.getTrainingDate(),
-                        training.getTrainingType().getTrainingTypeName(), // Adjust if method name differs
-                        training.getTrainingDuration(), // Passes straight in as a Number
-                        training.getTrainee().getUser().getUsername()     // Adjust if mapping requires full name
+                        training.getTrainingType().getTrainingTypeName(),
+                        training.getTrainingDuration(),
+                        training.getTrainee().getUser().getUsername()
                 ))
                 .toList();
 
-        // 4. Return 200 OK with the filtered list
         return ResponseEntity.ok(response);
     }
 
 
+    @Operation(summary = "Activate or deactivate trainer", description = "Toggles a trainer active status")
+    @ApiResponse(responseCode = "200", description = "Status updated")
     @PatchMapping("/{username}/status")
     public ResponseEntity<Void> activateDeactivateTrainer(
-            @PathVariable String username,
-            @RequestParam String authUser,
-            @RequestParam String authPass) {
+            @PathVariable("username") String username,
+            @RequestParam("authUser") String authUser,
+            @RequestParam("authPass") String authPass) {
 
-        // Calls your trainer service method which toggles the state
-        trainerService.activateDeactivate(authUser, authPass, username);
-
-        // Return 200 OK with no content body
+        log.info("Toggling active status for trainer {}", username);
+        userService.activateDeactivate(authUser, authPass, username);
         return ResponseEntity.ok().build();
     }
 

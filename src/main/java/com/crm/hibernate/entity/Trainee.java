@@ -1,10 +1,13 @@
 package com.crm.hibernate.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
+
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+@Data
 @Entity
 @Table(name = "trainees")
 public class Trainee {
@@ -37,18 +40,6 @@ public class Trainee {
 
     public Trainee() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Date getDateOfBirth() { return dateOfBirth; }
-    public void setDateOfBirth(Date dateOfBirth) { this.dateOfBirth = dateOfBirth; }
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-    public Set<Trainer> getTrainers() { return trainers; }
-    public void setTrainers(Set<Trainer> trainers) { this.trainers = trainers; }
-    public Set<Training> getTrainings() { return trainings; }
-    public void setTrainings(Set<Training> trainings) { this.trainings = trainings; }
 
     @Override
     public String toString() {

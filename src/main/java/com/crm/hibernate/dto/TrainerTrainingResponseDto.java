@@ -13,6 +13,6 @@ public class TrainerTrainingResponseDto {
     private String trainingName;
     private Date trainingDate;
     private String trainingType;
-    private Number trainingDuration; // with .intValue() handled if needed
+    private Number trainingDuration;
     private String traineeName;
 }
