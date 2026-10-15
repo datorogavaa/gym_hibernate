@@ -56,7 +56,6 @@ public class Trainee {
                 "id=" + id +
                 ", dateOfBirth=" + dateOfBirth +
                 ", address='" + address + '\'' +
-                ", user=" + user +
                 '}';
     }
     @Override

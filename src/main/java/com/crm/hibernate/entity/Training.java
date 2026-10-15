@@ -55,10 +55,7 @@ public class Training {
     public String toString() {
         return "Training{" +
                 "id=" + id +
-                ", trainee=" + trainee +
-                ", trainer=" + trainer +
                 ", trainingName='" + trainingName + '\'' +
-                ", trainingType=" + trainingType +
                 ", trainingDate=" + trainingDate +
                 ", trainingDuration=" + trainingDuration +
                 '}';

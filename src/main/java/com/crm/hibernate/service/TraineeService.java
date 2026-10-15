@@ -73,7 +73,7 @@ public class TraineeService {
         validateRequired(firstName, "First name");
         validateRequired(lastName, "Last name");
 
-        Trainee trainee = selectProfile(authUser, authPass, targetUsername);
+        Trainee trainee = findProfile(targetUsername);
         trainee.getUser().setFirstName(firstName);
         trainee.getUser().setLastName(lastName);
         trainee.getUser().setIsActive(isActive);
@@ -86,19 +86,18 @@ public class TraineeService {
     }
 
     @Transactional
-    public void activateDeactivate(String authUser, String authPass, String targetUsername) {
+    public void setActiveStatus(String authUser, String authPass, String targetUsername, boolean isActive) {
         authService.authenticate(authUser, authPass);
-        Trainee trainee = selectProfile(authUser, authPass, targetUsername);
-        boolean state = !trainee.getUser().getIsActive();
-        trainee.getUser().setIsActive(state);
+        Trainee trainee = findProfile(targetUsername);
+        trainee.getUser().setIsActive(isActive);
         traineeRepository.save(trainee);
-        log.info("Toggled Trainee {} isActive to {}", targetUsername, state);
+        log.info("Set Trainee {} isActive to {}", targetUsername, isActive);
     }
 
     @Transactional
     public void deleteProfile(String authUser, String authPass, String targetUsername) {
         authService.authenticate(authUser, authPass);
-        Trainee trainee = selectProfile(authUser, authPass, targetUsername);
+        Trainee trainee = findProfile(targetUsername);
 
         trainee.getTrainers().clear();
         traineeRepository.save(trainee);
@@ -110,7 +109,7 @@ public class TraineeService {
     @Transactional
     public void updateTrainersList(String authUser, String authPass, String traineeUsername, Set<String> trainerUsernames) {
         authService.authenticate(authUser, authPass);
-        Trainee trainee = selectProfile(authUser, authPass, targetUsernameOrFallback(traineeUsername));
+        Trainee trainee = findProfile(targetUsernameOrFallback(traineeUsername));
         List<Trainer> trainers = trainerRepository.findByUsernames(trainerUsernames);
         trainee.getTrainers().clear();
         trainee.getTrainers().addAll(trainers);
@@ -124,8 +123,15 @@ public class TraineeService {
         }
     }
 
+    private Trainee findProfile(String targetUsername) {
+        validateRequired(targetUsername, "Username");
+        return traineeRepository.findByUsername(targetUsername)
+                .orElseThrow(() -> new NoSuchElementException("Trainee not found"));
+    }
+
     private String targetUsernameOrFallback(String name) {
         validateRequired(name, "Trainee username");
         return name;
     }
+
 }

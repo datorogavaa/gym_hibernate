@@ -75,7 +75,7 @@ public class TrainerService {
         validateRequired(lastName, "Last name");
         if (specializationId == null) throw new IllegalArgumentException("Specialization ID is required");
 
-        Trainer trainer = selectProfile(authUser, authPass, targetUsername);
+        Trainer trainer = findProfile(targetUsername);
         TrainingType type = trainingTypeRepository.findById(specializationId)
                 .orElseThrow(() -> new IllegalArgumentException("Specialization not found"));
 
@@ -90,13 +90,12 @@ public class TrainerService {
     }
 
     @Transactional
-    public void activateDeactivate(String authUser, String authPass, String targetUsername) {
+    public void setActiveStatus(String authUser, String authPass, String targetUsername, boolean isActive) {
         authService.authenticate(authUser, authPass);
-        Trainer trainer = selectProfile(authUser, authPass, targetUsername);
-        boolean state = !trainer.getUser().getIsActive();
-        trainer.getUser().setIsActive(state);
+        Trainer trainer = findProfile(targetUsername);
+        trainer.getUser().setIsActive(isActive);
         trainerRepository.save(trainer);
-        log.info("Toggled Trainer {} isActive to {}", targetUsername, state);
+        log.info("Set Trainer {} isActive to {}", targetUsername, isActive);
     }
 
     @Transactional(readOnly = true)
@@ -111,4 +110,11 @@ public class TrainerService {
             throw new IllegalArgumentException(field + " is required");
         }
     }
+
+    private Trainer findProfile(String targetUsername) {
+        validateRequired(targetUsername, "Username");
+        return trainerRepository.findByUsername(targetUsername)
+                .orElseThrow(() -> new NoSuchElementException("Trainer not found"));
+    }
+
 }

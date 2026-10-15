@@ -100,12 +100,12 @@ class TrainerServiceTest {
     }
 
     @Test
-    void activateDeactivateTogglesUserActiveState() {
+    void setActiveStatusSetsUserActiveState() {
         Trainer trainer = new Trainer();
         trainer.setUser(new User("Sam", "Green", "sam.green", "secret", true));
         when(trainerRepository.findByUsername("sam.green")).thenReturn(Optional.of(trainer));
 
-        trainerService.activateDeactivate("admin", "adminPass", "sam.green");
+        trainerService.setActiveStatus("admin", "adminPass", "sam.green", false);
 
         assertEquals(false, trainer.getUser().getIsActive());
         verify(trainerRepository).save(trainer);

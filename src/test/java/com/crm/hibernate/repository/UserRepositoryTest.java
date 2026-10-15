@@ -72,7 +72,7 @@ class UserRepositoryTest {
     }
 
     @Test
-    void countByBaseUsernameCountsMatchingPrefixOnly() {
+    void countByBaseUsernameCountsBaseAndNumericSuffixesOnly() {
         resetUsersIdentity();
         User john = new User("Repo", "Count", "repo.count.one", "secret", true);
         User jane = new User("Repo", "Count", "repo.count.two", "secret", true);
@@ -84,7 +84,7 @@ class UserRepositoryTest {
         em.flush();
         em.clear();
 
-        assertEquals(2L, userRepository.countByBaseUsername("repo.count"));
+        assertEquals(0L, userRepository.countByBaseUsername("repo.count"));
         assertEquals(0L, userRepository.countByBaseUsername("missing.base"));
         assertFalse(userRepository.findByUsername("repo.other.user").isEmpty());
     }
