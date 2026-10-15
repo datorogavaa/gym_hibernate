@@ -112,12 +112,12 @@ class TraineeServiceTest {
     }
 
     @Test
-    void activateDeactivateTogglesUserActiveState() {
+    void setActiveStatusSetsUserActiveState() {
         Trainee trainee = new Trainee();
         trainee.setUser(new User("John", "Doe", "john.doe", "secret", true));
         when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(trainee));
 
-        traineeService.activateDeactivate("admin", "adminPass", "john.doe");
+        traineeService.setActiveStatus("admin", "adminPass", "john.doe", false);
 
         assertFalse(trainee.getUser().getIsActive());
         verify(traineeRepository).save(trainee);

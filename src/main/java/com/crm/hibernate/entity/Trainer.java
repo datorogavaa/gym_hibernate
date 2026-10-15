@@ -44,8 +44,6 @@ public class Trainer {
     public String toString() {
         return "Trainer{" +
                 "id=" + id +
-                ", specialization=" + specialization +
-                ", user=" + user +
                 '}';
     }
     @Override

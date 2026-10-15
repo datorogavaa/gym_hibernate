@@ -35,7 +35,7 @@ public class TrainerRepository {
 
     public List<Trainer> findNotAssignedToTrainee(String traineeUsername) {
         return em.createQuery(
-                        "SELECT tr FROM Trainer tr WHERE tr NOT IN " +
+                        "SELECT DISTINCT tr FROM Trainer tr JOIN FETCH tr.user JOIN FETCH tr.specialization WHERE tr NOT IN " +
                                 "(SELECT ttr FROM Trainee t JOIN t.trainers ttr JOIN t.user u WHERE u.username = :traineeUsername)", Trainer.class)
                 .setParameter("traineeUsername", traineeUsername)
                 .getResultList();
@@ -43,7 +43,7 @@ public class TrainerRepository {
 
     public List<Trainer> findByUsernames(Set<String> usernames) {
         if (usernames == null || usernames.isEmpty()) return new ArrayList<>();
-        return em.createQuery("SELECT tr FROM Trainer tr JOIN tr.user u WHERE u.username IN :usernames", Trainer.class)
+        return em.createQuery("SELECT tr FROM Trainer tr JOIN FETCH tr.user JOIN FETCH tr.specialization WHERE tr.user.username IN :usernames", Trainer.class)
                 .setParameter("usernames", usernames)
                 .getResultList();
     }

@@ -24,6 +24,9 @@ public class TrainingRepository {
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Training> cq = cb.createQuery(Training.class);
         Root<Training> training = cq.from(Training.class);
+        training.fetch("trainee", JoinType.INNER).fetch("user", JoinType.INNER);
+        training.fetch("trainer", JoinType.INNER).fetch("user", JoinType.INNER);
+        training.fetch("trainingType", JoinType.INNER);
         Join<Training, Trainee> traineeJoin = training.join("trainee");
         Join<Trainee, User> traineeUser = traineeJoin.join("user");
         Join<Training, Trainer> trainerJoin = training.join("trainer");
@@ -47,6 +50,7 @@ public class TrainingRepository {
         }
 
         cq.where(predicates.toArray(new Predicate[0]));
+        cq.distinct(true);
         return em.createQuery(cq).getResultList();
     }
 
@@ -54,6 +58,8 @@ public class TrainingRepository {
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Training> cq = cb.createQuery(Training.class);
         Root<Training> training = cq.from(Training.class);
+        training.fetch("trainer", JoinType.INNER).fetch("user", JoinType.INNER);
+        training.fetch("trainee", JoinType.INNER).fetch("user", JoinType.INNER);
         Join<Training, Trainer> trainerJoin = training.join("trainer");
         Join<Trainer, User> trainerUser = trainerJoin.join("user");
         Join<Training, Trainee> traineeJoin = training.join("trainee");
@@ -73,6 +79,7 @@ public class TrainingRepository {
         }
 
         cq.where(predicates.toArray(new Predicate[0]));
+        cq.distinct(true);
         return em.createQuery(cq).getResultList();
     }
 }

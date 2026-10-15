@@ -11,9 +11,18 @@ public class UsernameGenerator {
         this.userRepository = userRepository;
     }
 
-    public String generate(String firstName, String lastName) {
+    public synchronized String generate(String firstName, String lastName) {
         String base = firstName + "." + lastName;
         long count = userRepository.countByBaseUsername(base);
-        return count == 0 ? base : base + count;
+        if (count == 0 && !userRepository.existsByUsername(base)) {
+            return base;
+        }
+
+        long suffix = Math.max(1, count);
+        String candidate;
+        do {
+            candidate = base + suffix++;
+        } while (userRepository.existsByUsername(candidate));
+        return candidate;
     }
 }
