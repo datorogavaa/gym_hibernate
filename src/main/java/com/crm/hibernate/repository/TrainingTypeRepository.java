@@ -1,24 +1,7 @@
 package com.crm.hibernate.repository;
 
 import com.crm.hibernate.entity.TrainingType;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
-import java.util.Optional;
-
-@Repository
-public class TrainingTypeRepository {
-    @PersistenceContext
-    private EntityManager em;
-
-    public Optional<TrainingType> findById(Long id) {
-        return Optional.ofNullable(em.find(TrainingType.class, id));
-    }
-
-    public List<TrainingType> findAll() {
-        return em.createQuery("SELECT t FROM TrainingType t", TrainingType.class)
-                .getResultList();
-    }
+public interface TrainingTypeRepository extends JpaRepository<TrainingType, Long> {
 }

@@ -1,18 +1,18 @@
 package com.crm.hibernate.config;
 
+import com.crm.hibernate.AuditLoggingFilter;
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.jdbc.datasource.init.DataSourceInitializer;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,10 +21,11 @@ import java.util.Properties;
 
 @Configuration
 @EnableTransactionManagement
+@EnableJpaRepositories(basePackages = "com.crm.hibernate.repository")
 @ComponentScan(basePackages = {
-        "com.crm.hibernate.repository",
         "com.crm.hibernate.service",
-        "com.crm.hibernate.security"
+        "com.crm.hibernate.security",
+        "com.crm.hibernate.observability"
 })
 @PropertySource("classpath:application.properties")
 public class AppConfig {
@@ -34,11 +35,21 @@ public class AppConfig {
     private Environment env;
 
     @Bean
+    public FilterRegistrationBean<AuditLoggingFilter> auditLoggingFilter() {
+        log.info("Registering audit logging filter");
+        FilterRegistrationBean<AuditLoggingFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new AuditLoggingFilter());
+        registration.addUrlPatterns("/*");
+        registration.setOrder(1);
+        return registration;
+    }
+
+    @Bean
     public DataSource dataSource() {
         log.info("Configuring application data source");
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName(env.getRequiredProperty("spring.datasource.driverClassName"));
-        dataSource.setUrl(env.getRequiredProperty("spring.datasource.url"));
+        dataSource.setDriverClassName(env.getProperty("spring.datasource.driverClassName", "org.h2.Driver"));
+        dataSource.setUrl(env.getProperty("spring.datasource.url", "jdbc:h2:mem:crm_db;DB_CLOSE_DELAY=-1"));
         dataSource.setUsername(env.getProperty("spring.datasource.username", "sa"));
         dataSource.setPassword(env.getProperty("spring.datasource.password", ""));
         return dataSource;
@@ -67,21 +78,6 @@ public class AppConfig {
 
         em.setJpaProperties(jpaProperties);
         return em;
-    }
-
-    @Bean
-    @DependsOn("entityManagerFactory")
-    public DataSourceInitializer dataSourceInitializer(DataSource dataSource) {
-        log.info("Configuring database data initializer");
-        ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
-        populator.addScript(new ClassPathResource("data.sql"));
-
-        populator.setContinueOnError(true);
-
-        DataSourceInitializer initializer = new DataSourceInitializer();
-        initializer.setDataSource(dataSource);
-        initializer.setDatabasePopulator(populator);
-        return initializer;
     }
 
     @Bean

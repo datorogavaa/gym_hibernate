@@ -5,17 +5,23 @@ import com.crm.hibernate.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import com.crm.hibernate.observability.GymMetrics;
 
 @Service
 public class AuthenticationService {
     private static final Logger log = LoggerFactory.getLogger(AuthenticationService.class);
     private final UserRepository userRepository;
+    private final GymMetrics metrics;
 
-    public AuthenticationService(UserRepository userRepository) {
+    public AuthenticationService(UserRepository userRepository, GymMetrics metrics) {
         this.userRepository = userRepository;
+        this.metrics = metrics;
     }
 
     public void authenticate(String username, String password) {
+        if (metrics != null) {
+            metrics.recordAuthenticationAttempt();
+        }
         log.debug("Authenticating user: {}", username);
         if (username == null || password == null) {
             log.warn("Authentication failed: null credentials provided");

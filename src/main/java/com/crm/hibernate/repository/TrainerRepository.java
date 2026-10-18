@@ -1,59 +1,26 @@
 package com.crm.hibernate.repository;
 
 import com.crm.hibernate.entity.Trainer;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.PersistenceContext;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-@Repository
-public class TrainerRepository {
-    @PersistenceContext
-    private EntityManager em;
+public interface TrainerRepository extends JpaRepository<Trainer, Long> {
 
+    @Query("select distinct tr from Trainer tr " +
+            "join fetch tr.user u join fetch tr.specialization " +
+            "left join fetch tr.trainees trainees left join fetch trainees.user " +
+            "where u.username = :username")
+    Optional<Trainer> findByUsername(@Param("username") String username);
 
-    public void save(Trainer trainer) {
-        if (trainer.getId() == null) em.persist(trainer);
-        else em.merge(trainer);
-    }
+    @Query("select distinct tr from Trainer tr join fetch tr.user " +
+            "where not exists (select 1 from Trainee t join t.trainers ttr where ttr.id = tr.id)")
+    List<Trainer> findNotAssignedToTrainee(String traineeUsername);
 
-    public Optional<Trainer> findByUsername(String username) {
-        try {
-            return Optional.of(em.createQuery(
-                            "SELECT DISTINCT tr FROM Trainer tr " +
-                                    "JOIN FETCH tr.user u " +
-                                    "JOIN FETCH tr.specialization " +
-                                    "LEFT JOIN FETCH tr.trainees trainees " +
-                                    "LEFT JOIN FETCH trainees.user " +
-                                    "WHERE u.username = :username",
-                            Trainer.class)
-                    .setParameter("username", username)
-                    .getSingleResult());
-        } catch (NoResultException e) {
-            return Optional.empty();
-        }
-    }
-
-    public List<Trainer> findNotAssignedToTrainee(String traineeUsername) {
-        return em.createQuery(
-                "SELECT DISTINCT tr FROM Trainer tr JOIN FETCH tr.user " +
-                        "WHERE NOT EXISTS (" +
-                        "   SELECT 1 FROM Trainee t JOIN t.trainers ttr " +
-                        "   WHERE ttr.id = tr.id" +
-                        ")",
-                Trainer.class
-        ).getResultList();
-    }
-
-    public List<Trainer> findByUsernames(Set<String> usernames) {
-        if (usernames == null || usernames.isEmpty()) return new ArrayList<>();
-        return em.createQuery("SELECT tr FROM Trainer tr JOIN tr.user u WHERE u.username IN :usernames", Trainer.class)
-                .setParameter("usernames", usernames)
-                .getResultList();
-    }
+    @Query("select tr from Trainer tr join tr.user u where u.username in :usernames")
+    List<Trainer> findByUsernames(@Param("usernames") Set<String> usernames);
 }
