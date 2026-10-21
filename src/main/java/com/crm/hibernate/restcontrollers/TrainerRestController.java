@@ -1,10 +1,8 @@
 package com.crm.hibernate.restcontrollers;
 
 import com.crm.hibernate.dto.*;
-import com.crm.hibernate.entity.Trainee;
 import com.crm.hibernate.entity.Trainer;
 import com.crm.hibernate.entity.Training;
-import com.crm.hibernate.service.TraineeService;
 import com.crm.hibernate.service.TrainerService;
 import com.crm.hibernate.service.TrainingService;
 import com.crm.hibernate.service.UserService;
@@ -14,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,8 +36,8 @@ public class TrainerRestController {
 
     @Operation(summary = "Register a trainer", description = "Creates a trainer profile and returns generated credentials")
     @ApiResponse(responseCode = "200", description = "Created")
-    @PostMapping("/create")
-    public ResponseEntity<TrainerResponseDto> createTrainer(@RequestBody TrainerRequestDto trainer) {
+    @PostMapping
+    public ResponseEntity<TrainerResponseDto> createTrainer(@Valid @RequestBody TrainerRequestDto trainer) {
         log.info("Creating trainer profile for {} {}", trainer.getFirstName(), trainer.getLastName());
         Trainer createdTrainer = trainerService.createProfile(
                 trainer.getFirstName(),
@@ -87,12 +86,12 @@ public class TrainerRestController {
 
     @Operation(summary = "Update trainer profile", description = "Updates trainer personal data and active status")
     @ApiResponse(responseCode = "200", description = "Profile updated")
-    @PutMapping("/{username}/update")
+    @PutMapping("/{username}")
     public ResponseEntity<TrainerProfileResponseDto> updateTrainer(
             @PathVariable("username") String username,
             @RequestParam("authUser") String authUser,
             @RequestParam("authPass") String authPass,
-            @RequestBody TrainerUpdateDto updateDto) {
+            @Valid @RequestBody TrainerUpdateDto updateDto) {
 
         log.info("Updating trainer profile for {}", username);
         Trainer updatedTrainer = trainerService.updateProfile(
@@ -123,28 +122,6 @@ public class TrainerRestController {
 
         return ResponseEntity.ok(response);
     }
-
-    @GetMapping("/{username}/unassigned-trainers")
-    public ResponseEntity<List<TrainerSummaryDto>> getUnassignedTrainers(
-            @PathVariable("username") String username,
-            @RequestParam("authUser") String authUser,
-            @RequestParam("authPass") String authPass) {
-
-        log.debug("Loading unassigned trainers for trainee {}", username);
-        List<Trainer> unassignedTrainers = trainerService.getUnassignedTrainers(authUser, authPass, username);
-
-        List<TrainerSummaryDto> response = unassignedTrainers.stream()
-                .map(trainer -> new TrainerSummaryDto(
-                        trainer.getUser().getUsername(),
-                        trainer.getUser().getFirstName(),
-                        trainer.getUser().getLastName(),
-                        trainer.getSpecialization()
-                ))
-                .toList();
-
-        return ResponseEntity.ok(response);
-    }
-
 
 
     @GetMapping("/{username}/trainings")
@@ -180,17 +157,20 @@ public class TrainerRestController {
     }
 
 
-    @Operation(summary = "Activate or deactivate trainer", description = "Toggles a trainer active status")
-    @ApiResponse(responseCode = "200", description = "Status updated")
     @PatchMapping("/{username}/status")
+    @Operation(summary = "Activate or deactivate trainer", description = "Sets explicit active status for a trainer profile")
+    @ApiResponse(responseCode = "200", description = "Status updated successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request or trainer already has the requested status")
     public ResponseEntity<Void> activateDeactivateTrainer(
             @PathVariable("username") String username,
             @RequestParam("authUser") String authUser,
-            @RequestParam("authPass") String authPass) {
+            @RequestParam("authPass") String authPass,
+            @Valid @RequestBody StatusUpdateRequestDto request) {
 
-        log.info("Toggling active status for trainer {}", username);
-        userService.activateDeactivate(authUser, authPass, username);
+        log.info("Setting active status for trainer {} to {}", username, request.getIsActive());
+        userService.activateDeactivate(authUser, authPass, username, request.getIsActive());
         return ResponseEntity.ok().build();
     }
+
 
 }

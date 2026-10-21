@@ -2,13 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+          http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.crm</groupId>
 	<artifactId>hibernate</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<!-- 1. Changed packaging to war for Tomcat deployment -->
 	<packaging>war</packaging>
 
 	<properties>
@@ -21,6 +20,7 @@
 		<logback.version>1.5.3</logback.version>
 		<h2.version>2.2.224</h2.version>
 		<jackson.version>2.16.1</jackson.version>
+		<swagger.version>2.2.20</swagger.version>
 	</properties>
 
 	<dependencies>
@@ -31,21 +31,26 @@
 			<version>${spring.version}</version>
 		</dependency>
 
-		<!-- 2. Spring Web MVC (Required for @RestController) -->
+		<!-- Spring Web MVC -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-webmvc</artifactId>
 			<version>${spring.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.hibernate.validator</groupId>
+			<artifactId>hibernate-validator</artifactId>
+			<version>8.0.1.Final</version>
+		</dependency>
 
-		<!-- 3. Jackson (Required to process JSON requests and responses) -->
+		<!-- Jackson JSON Processor -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 			<version>${jackson.version}</version>
 		</dependency>
 
-		<!-- Database / Hibernate -->
+		<!-- Database / Hibernate / ORM -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-orm</artifactId>
@@ -66,6 +71,30 @@
 			<artifactId>jakarta.persistence-api</artifactId>
 			<version>3.1.0</version>
 		</dependency>
+
+		<!-- OpenAPI / Swagger (Pure Standalone dependencies - No Spring Boot) -->
+		<dependency>
+			<groupId>io.swagger.core.v3</groupId>
+			<artifactId>swagger-annotations-jakarta</artifactId>
+			<version>${swagger.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.swagger.core.v3</groupId>
+			<artifactId>swagger-models-jakarta</artifactId>
+			<version>${swagger.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.swagger.core.v3</groupId>
+			<artifactId>swagger-core-jakarta</artifactId>
+			<version>${swagger.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>swagger-ui</artifactId>
+			<version>5.11.8</version>
+		</dependency>
+
+		<!-- H2 Database -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
@@ -94,20 +123,13 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.42</version>
+			<version>1.18.32</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.aspectj</groupId>
 			<artifactId>aspectjweaver</artifactId>
 			<version>1.9.22</version>
-		</dependency>
-
-		<!-- OpenAPI / Swagger -->
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.4.0</version>
 		</dependency>
 
 		<!-- Testing -->
@@ -135,16 +157,17 @@
 				<configuration>
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
+					<parameters>true</parameters>
 				</configuration>
 			</plugin>
 
-			<!-- 4. WAR Plugin needed for WAR packaging -->
+			<!-- WAR Plugin needed for Tomcat deployment -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-war-plugin</artifactId>
 				<version>3.4.0</version>
 				<configuration>
-					<failOnMissingWebXml>false</failOnMissingWebXml> <!-- Crucial: You are using Java config, not web.xml -->
+					<failOnMissingWebXml>false</failOnMissingWebXml>
 				</configuration>
 			</plugin>
 

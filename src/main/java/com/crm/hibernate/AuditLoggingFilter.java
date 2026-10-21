@@ -46,8 +46,8 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
 
         } finally {
             long timeTaken = System.currentTimeMillis() - startTime;
-            String requestBody = getStringValue(requestWrapper.getContentAsByteArray(), request.getCharacterEncoding());
-            String responseBody = getStringValue(responseWrapper.getContentAsByteArray(), response.getCharacterEncoding());
+            String requestBody = sanitize(getStringValue(requestWrapper.getContentAsByteArray(), request.getCharacterEncoding()));
+            String responseBody = sanitize(getStringValue(responseWrapper.getContentAsByteArray(), response.getCharacterEncoding()));
 
             log.info("Completed Request: Status=[{}] Time=[{}ms] RequestBody=[{}] ResponseBody=[{}]",
                     response.getStatus(), timeTaken, requestBody, responseBody);
@@ -56,6 +56,12 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
 
             MDC.remove(TRANSACTION_ID);
         }
+
+    }
+
+    private String sanitize(String body) {
+        return body.replaceAll("(?i)(\"(?:password|oldPassword|newPassword|authPass)\"\\s*:\\s*\")[^\"]*(\")",
+                "$1****$2");
     }
 
     private String getStringValue(byte[] contentAsByteArray, String characterEncoding) {
@@ -64,7 +70,7 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
                 return "";
             }
             return new String(contentAsByteArray, characterEncoding != null ? characterEncoding : "UTF-8")
-                    .replaceAll("[\\r\\n\\t]+", " "); // Flatten JSON for cleaner logs
+                    .replaceAll("[\\r\\n\\t]+", " ");
         } catch (UnsupportedEncodingException e) {
             return "[Unsupported Encoding]";
         }

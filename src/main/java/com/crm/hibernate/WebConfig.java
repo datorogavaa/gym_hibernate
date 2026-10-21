@@ -10,17 +10,14 @@ import org.slf4j.LoggerFactory;
 
 @Configuration
 @EnableWebMvc
-@ComponentScan(basePackages = {"com.crm.hibernate.restcontrollers", "org.springdoc"})
+@ComponentScan(basePackages = {"com.crm.hibernate.restcontrollers"})
 public class WebConfig implements WebMvcConfigurer {
     private static final Logger log = LoggerFactory.getLogger(WebConfig.class);
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        log.debug("Registering Swagger UI and OpenAPI resource handlers");
-        registry.addResourceHandler("/swagger-ui/**")
-                .addResourceLocations("classpath:/META-INF/resources/webjars/swagger-ui/5.11.8/");
-
-        registry.addResourceHandler("/v3/api-docs/**")
-                .addResourceLocations("classpath:/META-INF/resources/");
+        log.debug("Registering Swagger UI resource handler");
+        registry.addResourceHandler("/webjars/**")
+                .addResourceLocations("classpath:/META-INF/resources/webjars/");
     }
 }

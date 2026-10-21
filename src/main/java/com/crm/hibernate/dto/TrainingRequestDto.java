@@ -3,6 +3,8 @@ package com.crm.hibernate.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Date;
 
@@ -10,11 +12,11 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TrainingRequestDto {
-    private String traineeUsername;
-    private String trainerUsername;
-    private String trainingName;
-    private Date trainingDate;
-    private Double trainingDuration;
-    private String authUser;
-    private String authPass;
+    @NotBlank private String traineeUsername;
+    @NotBlank private String trainerUsername;
+    @NotBlank private String trainingName;
+    @NotNull private Date trainingDate;
+    @NotNull private Double trainingDuration;
+    @NotBlank private String authUser;
+    @NotBlank private String authPass;
 }

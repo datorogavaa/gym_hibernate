@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +39,8 @@ public class TraineeRestController {
 
     @Operation(summary = "Register a trainee", description = "Creates a trainee profile and returns generated credentials")
     @ApiResponse(responseCode = "200", description = "Created")
-    @PostMapping( "/create")
-    public ResponseEntity<TraineeResponseDto> createTrainee(@RequestBody TraineeRequestDto trainee) {
+    @PostMapping
+    public ResponseEntity<TraineeResponseDto> createTrainee(@Valid @RequestBody TraineeRequestDto trainee) {
         log.info("Creating trainee profile for {} {}", trainee.getFirstName(), trainee.getLastName());
         Trainee createdTrainee = traineeService.createProfile(
                 trainee.getFirstName(),
@@ -91,12 +92,12 @@ public class TraineeRestController {
 
     @Operation(summary = "Update trainee profile", description = "Updates trainee personal data and active status")
     @ApiResponse(responseCode = "200", description = "Profile updated")
-    @PutMapping("/{username}/update")
+    @PutMapping("/{username}")
     public ResponseEntity<TraineeProfileResponseDto> updateTraineeProfile(
             @PathVariable("username") String username,
             @RequestParam("authUser") String authUser,
             @RequestParam("authPass") String authPass,
-            @RequestBody TraineeRequestDto traineeRequest) {
+            @Valid @RequestBody TraineeRequestDto traineeRequest) {
 
         log.info("Updating trainee profile for {}", username);
         Trainee updatedTrainee = traineeService.updateProfile(
@@ -134,7 +135,7 @@ public class TraineeRestController {
 
     @Operation(summary = "Delete trainee profile", description = "Hard-deletes trainee profile and related records")
     @ApiResponse(responseCode = "200", description = "Profile deleted")
-    @DeleteMapping( "/{username}/delete")
+    @DeleteMapping( "/{username}")
     public ResponseEntity<Void> deleteTraineeProfile(
             @PathVariable("username") String username,
             @RequestParam("authUser") String authUser,
@@ -142,6 +143,36 @@ public class TraineeRestController {
         log.info("Deleting trainee profile for {}", username);
         traineeService.deleteProfile(authUser, authPass, username);
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{username}/trainers")
+    public ResponseEntity<List<TraineeProfileResponseDto.TrainerDto>> updateTrainerList(
+            @PathVariable String username,
+            @RequestParam("authUser") String authUser,
+            @RequestParam("authPass") String authPass,
+            @Valid @RequestBody UpdateTrainerListRequestDto request) {
+        traineeService.updateTrainersList(authUser, authPass, username, request.getTrainerUsernames());
+        Trainee trainee = traineeService.selectProfile(authUser, authPass, username);
+        List<TraineeProfileResponseDto.TrainerDto> response = trainee.getTrainers().stream()
+                .map(trainer -> new TraineeProfileResponseDto.TrainerDto(
+                        trainer.getUser().getUsername(), trainer.getUser().getFirstName(),
+                        trainer.getUser().getLastName(), trainer.getSpecialization()))
+                .toList();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{username}/unassigned-trainers")
+    public ResponseEntity<List<TrainerSummaryDto>> getUnassignedTrainers(
+            @PathVariable String username,
+            @RequestParam("authUser") String authUser,
+            @RequestParam("authPass") String authPass) {
+        List<com.crm.hibernate.entity.Trainer> trainers =
+                traineeService.getUnassignedTrainers(authUser, authPass, username);
+        return ResponseEntity.ok(trainers.stream()
+                .map(trainer -> new TrainerSummaryDto(
+                        trainer.getUser().getUsername(), trainer.getUser().getFirstName(),
+                        trainer.getUser().getLastName(), trainer.getSpecialization()))
+                .toList());
     }
 
 
@@ -179,17 +210,20 @@ public class TraineeRestController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Activate or deactivate trainee", description = "Toggles a trainee active status")
-    @ApiResponse(responseCode = "200", description = "Status updated")
     @PatchMapping("/{username}/status")
+    @Operation(summary = "Activate or deactivate trainee", description = "Sets explicit active status for a trainee profile")
+    @ApiResponse(responseCode = "200", description = "Status updated successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request or user already has the requested status")
     public ResponseEntity<Void> activateDeactivateTrainee(
             @PathVariable("username") String username,
             @RequestParam("authUser") String authUser,
-            @RequestParam("authPass") String authPass) {
+            @RequestParam("authPass") String authPass,
+            @Valid @RequestBody StatusUpdateRequestDto request) {
 
-        log.info("Toggling active status for trainee {}", username);
-        userService.activateDeactivate(authUser, authPass, username);
+        log.info("Setting active status for trainee {} to {}", username, request.getIsActive());
+        userService.activateDeactivate(authUser, authPass, username, request.getIsActive());
         return ResponseEntity.ok().build();
     }
+
 
 }

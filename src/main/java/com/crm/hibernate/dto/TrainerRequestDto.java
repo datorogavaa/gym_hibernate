@@ -1,7 +1,8 @@
 package com.crm.hibernate.dto;
 
 import com.crm.hibernate.entity.TrainingType;
-import jakarta.persistence.Column;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,10 +11,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TrainerRequestDto {
-    @Column(nullable = false)
+    @NotBlank
     private String firstName;
-    @Column(nullable = false)
+    @NotBlank
     private String lastName;
-    @Column(nullable = false)
+    @NotNull
     private TrainingType specialization;
 }

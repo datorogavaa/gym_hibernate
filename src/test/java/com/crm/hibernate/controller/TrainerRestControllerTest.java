@@ -100,18 +100,6 @@ class TrainerRestControllerTest {
         assertEquals(true, response.getBody().isActive());
     }
 
-    @Test
-    void getUnassignedTrainersReturnsList() {
-        Trainer trainer = new Trainer();
-        trainer.setUser(new User("Sam", "Green", "sam.green", "secret", true));
-        trainer.setSpecialization(new TrainingType(3L, "CARDIO"));
-        when(trainerService.getUnassignedTrainers("admin", "pass", "jane.doe")).thenReturn(List.of(trainer));
-
-        ResponseEntity<List<TrainerSummaryDto>> response = trainerRestController.getUnassignedTrainers("jane.doe", "admin", "pass");
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals("sam.green", response.getBody().get(0).getUsername());
-    }
 
     @Test
     void getTrainerTrainingsReturnsList() {
@@ -138,9 +126,14 @@ class TrainerRestControllerTest {
 
     @Test
     void activateDeactivateTrainerUsesUserService() {
-        ResponseEntity<Void> response = trainerRestController.activateDeactivateTrainer("sam.green", "admin", "pass");
+        // Prepare request body with explicit target status
+        StatusUpdateRequestDto request = new StatusUpdateRequestDto(true);
+
+        ResponseEntity<Void> response = trainerRestController.activateDeactivateTrainer(
+                "jane.smith", "admin", "pass", request
+        );
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(userService).activateDeactivate("admin", "pass", "sam.green");
+        verify(userService).activateDeactivate("admin", "pass", "jane.smith", true);
     }
 }

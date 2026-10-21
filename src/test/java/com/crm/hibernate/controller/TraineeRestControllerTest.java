@@ -1,5 +1,6 @@
 package com.crm.hibernate.controller;
 
+import com.crm.hibernate.dto.StatusUpdateRequestDto;
 import com.crm.hibernate.dto.TraineeProfileResponseDto;
 import com.crm.hibernate.dto.TraineeRequestDto;
 import com.crm.hibernate.dto.TraineeResponseDto;
@@ -119,9 +120,14 @@ class TraineeRestControllerTest {
 
     @Test
     void activateDeactivateTraineeUsesUserService() {
-        ResponseEntity<Void> response = traineeRestController.activateDeactivateTrainee("john.doe", "admin", "pass");
+        StatusUpdateRequestDto request = new StatusUpdateRequestDto(true);
+
+        ResponseEntity<Void> response = traineeRestController.activateDeactivateTrainee(
+                "john.doe", "admin", "pass", request
+        );
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(userService).activateDeactivate("admin", "pass", "john.doe");
+
+        verify(userService).activateDeactivate("admin", "pass", "john.doe", true);
     }
 }

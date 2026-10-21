@@ -1,6 +1,6 @@
 package com.crm.hibernate.dto;
 
-import jakarta.persistence.Column;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AuthDto {
 
-    @Column(nullable = false)
+    @NotBlank
     private String username;
-    @Column(nullable = false)
+    @NotBlank
     private String password;
 }

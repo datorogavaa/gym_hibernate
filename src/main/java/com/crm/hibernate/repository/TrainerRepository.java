@@ -44,10 +44,10 @@ public class TrainerRepository {
                 "SELECT DISTINCT tr FROM Trainer tr JOIN FETCH tr.user " +
                         "WHERE NOT EXISTS (" +
                         "   SELECT 1 FROM Trainee t JOIN t.trainers ttr " +
-                        "   WHERE ttr.id = tr.id" +
+                        "   JOIN t.user traineeUser WHERE ttr.id = tr.id AND traineeUser.username = :traineeUsername" +
                         ")",
                 Trainer.class
-        ).getResultList();
+        ).setParameter("traineeUsername", traineeUsername).getResultList();
     }
 
     public List<Trainer> findByUsernames(Set<String> usernames) {

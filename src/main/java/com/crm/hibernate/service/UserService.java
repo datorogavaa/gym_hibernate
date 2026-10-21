@@ -34,18 +34,17 @@ public class UserService {
     }
 
     @Transactional
-    public void activateDeactivate(String authUser, String authPass, String targetUsername) {
+    public void activateDeactivate(String authUser, String authPass, String targetUsername, boolean requestedState) {
         authService.authenticate(authUser, authPass);
         validateUsername(targetUsername);
-
         User user = userRepository.findByUsername(targetUsername)
                 .orElseThrow(() -> new NoSuchElementException("User not found: " + targetUsername));
-
-        boolean nextState = !Boolean.TRUE.equals(user.getIsActive());
-        user.setIsActive(nextState);
+        if (Boolean.TRUE.equals(user.getIsActive()) == requestedState) {
+            throw new IllegalArgumentException("User is already in the requested active state");
+        }
+        user.setIsActive(requestedState);
         userRepository.save(user);
-
-        log.info("Toggled user {} active state to {}", targetUsername, nextState);
+        log.info("Set user {} active state to {}", targetUsername, requestedState);
     }
 
     private void validateUsername(String username) {

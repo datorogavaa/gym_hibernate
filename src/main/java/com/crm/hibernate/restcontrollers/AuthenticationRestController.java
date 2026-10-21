@@ -1,15 +1,16 @@
 package com.crm.hibernate.restcontrollers;
 
 import com.crm.hibernate.security.AuthenticationService;
+import com.crm.hibernate.dto.ChangePasswordRequestDto;
 import com.crm.hibernate.service.UserService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 @RestController
 @RequestMapping("/api/auth")
@@ -39,18 +40,21 @@ public class AuthenticationRestController {
 
     @Operation(summary = "Change password", description = "Changes the user's password after validating the current one")
     @ApiResponse(responseCode = "200", description = "Password changed")
-    @PutMapping("/change-password")
+    @PutMapping("/password")
     public ResponseEntity<Void> changePassword(
-            @RequestParam("username") String username,
-            @RequestParam("oldPassword") String oldPassword,
-            @RequestParam("newPassword") String newPassword) {
+            @Valid @RequestBody ChangePasswordRequestDto request) {
+        String username = request.getUsername();
         try {
-            userService.changePassword(username, oldPassword, username,newPassword );
+            userService.changePassword(username, request.getOldPassword(), username, request.getNewPassword());
             log.info("Password changed for user {}", username);
             return ResponseEntity.ok().build();
         } catch (SecurityException e) {
             log.warn("Password change rejected for user {}", username);
             return ResponseEntity.status(401).build();
         }
+    }
+
+    public ResponseEntity<Void> changePassword(String username, String oldPassword, String newPassword) {
+        return changePassword(new ChangePasswordRequestDto(username, oldPassword, newPassword));
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,7 @@ public class TrainingRestController {
     @Operation(summary = "Add a training", description = "Creates a training assignment between a trainee and trainer")
     @ApiResponse(responseCode = "200", description = "Training added")
     @PostMapping
-    public ResponseEntity<Void> addTraining(@RequestBody TrainingRequestDto request) {
+    public ResponseEntity<Void> addTraining(@Valid @RequestBody TrainingRequestDto request) {
         trainingService.addTraining(
                 request.getAuthUser(),
                 request.getAuthPass(),

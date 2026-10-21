@@ -19,7 +19,6 @@ public class TraineeProfileResponseDto {
     private boolean isActive;
     private List<TrainerDto> trainers;
 
-    // Nested DTO for the Trainer list
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
