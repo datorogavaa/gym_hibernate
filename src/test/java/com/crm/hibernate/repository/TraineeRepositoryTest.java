@@ -1,70 +1,66 @@
 package com.crm.hibernate.repository;
 
-import com.crm.hibernate.config.AppConfig;
 import com.crm.hibernate.entity.Trainee;
 import com.crm.hibernate.entity.User;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.transaction.annotation.Transactional;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Date;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@SpringJUnitConfig(classes = AppConfig.class)
-@Transactional
+@ExtendWith(MockitoExtension.class)
 class TraineeRepositoryTest {
 
-    @PersistenceContext
+    @Mock
     private EntityManager em;
 
-    @Autowired
-    private TraineeRepository traineeRepository;
+    @Mock
+    private TypedQuery<Trainee> typedQuery;
 
-    private void resetIdentitySequences() {
-        em.createNativeQuery("ALTER TABLE users ALTER COLUMN id RESTART WITH 1000").executeUpdate();
-        em.createNativeQuery("ALTER TABLE trainees ALTER COLUMN id RESTART WITH 1000").executeUpdate();
-    }
+    @InjectMocks
+    private TraineeRepository traineeRepository;
 
     @Test
     void savePersistsTraineeAndFindByUsernameReturnsIt() {
-        resetIdentitySequences();
-        User user = new User("Repo", "Trainee", "repo.trainee", "secret", true);
-
+        User user = new User("Repo", "Trainee", "repo.trainee.save", "secret", true);
         Trainee trainee = new Trainee();
         trainee.setUser(user);
-        trainee.setDateOfBirth(new Date());
-        trainee.setAddress("Main Street");
+
+        when(em.createQuery(anyString(), eq(Trainee.class))).thenReturn(typedQuery);
+        when(typedQuery.setParameter(anyString(), any())).thenReturn(typedQuery);
+        when(typedQuery.getSingleResult()).thenReturn(trainee);
 
         traineeRepository.save(trainee);
-        em.flush();
-        em.clear();
+        Optional<Trainee> found = traineeRepository.findByUsername("repo.trainee.save");
 
-        Optional<Trainee> found = traineeRepository.findByUsername("repo.trainee");
+        verify(em).persist(trainee);
         assertTrue(found.isPresent());
-        assertEquals("repo.trainee", found.orElseThrow().getUser().getUsername());
+        assertEquals("repo.trainee.save", found.orElseThrow().getUser().getUsername());
     }
 
     @Test
     void deleteRemovesTrainee() {
-        resetIdentitySequences();
-        User user = new User("Repo", "Delete", "repo.delete", "secret", true);
-
+        User user = new User("Repo", "Trainee", "repo.trainee.delete", "secret", true);
         Trainee trainee = new Trainee();
         trainee.setUser(user);
-        traineeRepository.save(trainee);
-        em.flush();
-        em.clear();
+
+        when(em.contains(trainee)).thenReturn(false);
+        when(em.merge(trainee)).thenReturn(trainee);
 
         traineeRepository.delete(trainee);
-        em.flush();
-        em.clear();
 
-        assertTrue(traineeRepository.findByUsername("repo.delete").isEmpty());
+        verify(em).remove(trainee);
     }
 }

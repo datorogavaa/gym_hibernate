@@ -1,13 +1,7 @@
 package com.crm.hibernate.controller;
 
-import com.crm.hibernate.dto.StatusUpdateRequestDto;
-import com.crm.hibernate.dto.TraineeProfileResponseDto;
-import com.crm.hibernate.dto.TraineeRequestDto;
-import com.crm.hibernate.dto.TraineeResponseDto;
-import com.crm.hibernate.entity.Trainee;
-import com.crm.hibernate.entity.Trainer;
-import com.crm.hibernate.entity.TrainingType;
-import com.crm.hibernate.entity.User;
+import com.crm.hibernate.dto.*;
+import com.crm.hibernate.entity.*;
 import com.crm.hibernate.restcontrollers.TraineeRestController;
 import com.crm.hibernate.service.TraineeService;
 import com.crm.hibernate.service.TrainingService;
@@ -20,11 +14,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -60,6 +54,7 @@ class TraineeRestControllerTest {
         ResponseEntity<TraineeResponseDto> response = traineeRestController.createTrainee(request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("john.doe", response.getBody().getUsername());
         assertEquals("generatedPass", response.getBody().getPassword());
     }
@@ -81,9 +76,10 @@ class TraineeRestControllerTest {
         ResponseEntity<TraineeProfileResponseDto> response = traineeRestController.getTraineeProfile("john.doe", "admin", "pass");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("John", response.getBody().getFirstName());
         assertEquals(1, response.getBody().getTrainers().size());
-        assertEquals("sam.green", response.getBody().getTrainers().get(0).getUsername());
+        assertEquals("sam.green", response.getBody().getTrainers().getFirst().getUsername());
     }
 
     @Test
@@ -106,8 +102,9 @@ class TraineeRestControllerTest {
         ResponseEntity<TraineeProfileResponseDto> response = traineeRestController.updateTraineeProfile("john.doe", "admin", "pass", request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("New Street", response.getBody().getAddress());
-        assertEquals(true, response.getBody().isActive());
+        assertTrue(response.getBody().isActive());
     }
 
     @Test
@@ -116,6 +113,86 @@ class TraineeRestControllerTest {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(traineeService).deleteProfile("admin", "pass", "john.doe");
+    }
+
+
+    @Test
+    void getUnassignedTrainersReturnsList() {
+        Trainer trainer = new Trainer();
+        trainer.setUser(new User("Alex", "Smith", "alex.smith", "pass", true));
+        trainer.setSpecialization(new TrainingType(2L, "YOGA"));
+
+        when(traineeService.getUnassignedTrainers("admin", "pass", "john.doe"))
+                .thenReturn(List.of(trainer));
+
+        ResponseEntity<List<TrainerSummaryDto>> response =
+                traineeRestController.getUnassignedTrainers("john.doe", "admin", "pass");
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+        assertEquals("alex.smith", response.getBody().getFirst().getUsername());
+    }
+
+
+    @Test
+    void getTraineeTrainingsReturnsMappedTrainings() {
+        TrainingType type = new TrainingType(1L, "JAVA");
+
+        Trainer trainer = new Trainer();
+        trainer.setUser(new User("Trainer", "Bob", "trainer.bob", "pass", true));
+
+        Training training = new Training();
+        training.setTrainingName("Java Basics");
+        training.setTrainingDate(new Date());
+        training.setTrainingType(type);
+        training.setTrainingDuration(120.0);
+        training.setTrainer(trainer);
+
+        when(trainingService.getTraineeTrainings(eq("admin"), eq("pass"), any(TraineeTrainingCriteria.class)))
+                .thenReturn(List.of(training));
+
+        Date periodFrom = new Date();
+        Date periodTo = new Date();
+
+        ResponseEntity<List<TrainingResponseDto>> response = traineeRestController.getTraineeTrainings(
+                "john.doe", "admin", "pass", periodFrom, periodTo, "Trainer Bob", "JAVA"
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+        assertEquals("Java Basics", response.getBody().get(0).getTrainingName());
+
+        // 120 (int) - ზუსტი ტიპის შემოწმება
+        assertEquals(120, response.getBody().get(0).getTrainingDuration());
+        assertEquals("trainer.bob", response.getBody().get(0).getTrainerName());
+    }
+
+    @Test
+    void getTraineeTrainingsHandlesNullDuration() {
+        TrainingType type = new TrainingType(1L, "JAVA");
+
+        Trainer trainer = new Trainer();
+        trainer.setUser(new User("Trainer", "Bob", "trainer.bob", "pass", true));
+
+        Training training = new Training();
+        training.setTrainingName("Java Basics");
+        training.setTrainingDate(new Date());
+        training.setTrainingType(type);
+        training.setTrainingDuration(null); // <-- null duration branch
+        training.setTrainer(trainer);
+
+        when(trainingService.getTraineeTrainings(eq("admin"), eq("pass"), any(TraineeTrainingCriteria.class)))
+                .thenReturn(List.of(training));
+
+        ResponseEntity<List<TrainingResponseDto>> response = traineeRestController.getTraineeTrainings(
+                "john.doe", "admin", "pass", null, null, null, null
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(0, response.getBody().get(0).getTrainingDuration());
     }
 
     @Test

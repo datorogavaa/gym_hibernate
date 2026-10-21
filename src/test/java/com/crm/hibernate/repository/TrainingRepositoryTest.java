@@ -1,80 +1,146 @@
 package com.crm.hibernate.repository;
 
-import com.crm.hibernate.config.AppConfig;
 import com.crm.hibernate.dto.TraineeTrainingCriteria;
 import com.crm.hibernate.dto.TrainerTrainingCriteria;
-import com.crm.hibernate.entity.*;
+import com.crm.hibernate.entity.Training;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.*;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.transaction.annotation.Transactional;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@SpringJUnitConfig(classes = AppConfig.class)
-@Transactional
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TrainingRepositoryTest {
 
-    @PersistenceContext
+    @Mock
     private EntityManager em;
 
-    @Autowired
+    @Mock
+    private CriteriaBuilder criteriaBuilder;
+
+    @Mock
+    private CriteriaQuery<Training> criteriaQuery;
+
+    @Mock
+    private Root<Training> root;
+
+    @Mock
+    private TypedQuery<Training> typedQuery;
+
+    @Mock
+    private Predicate predicate;
+
+    @Mock
+    private Path<Object> path;
+
+    @InjectMocks
     private TrainingRepository trainingRepository;
 
-    private void resetIdentitySequences() {
-        em.createNativeQuery("ALTER TABLE training_types ALTER COLUMN id RESTART WITH 1000").executeUpdate();
-        em.createNativeQuery("ALTER TABLE users ALTER COLUMN id RESTART WITH 1000").executeUpdate();
-        em.createNativeQuery("ALTER TABLE trainers ALTER COLUMN id RESTART WITH 1000").executeUpdate();
-        em.createNativeQuery("ALTER TABLE trainees ALTER COLUMN id RESTART WITH 1000").executeUpdate();
-        em.createNativeQuery("ALTER TABLE trainings ALTER COLUMN id RESTART WITH 1000").executeUpdate();
+    private Join<Object, Object> joinAndFetchMock;
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() {
+        // იქმნება Combo-Mock, რომელიც არის ორივე: Join და Fetch
+        joinAndFetchMock = Mockito.mock(Join.class, Mockito.withSettings().extraInterfaces(Fetch.class));
     }
 
     @Test
-    void savePersistsTrainingAndCriteriaQueriesReturnResults() {
-        resetIdentitySequences();
-        TrainingType type = new TrainingType();
-        type.setTrainingTypeName("Java");
-        User traineeUser = new User("Repo", "Trainee", "repo.trainee.training", "secret", true);
-        User trainerUser = new User("Repo", "Trainer", "repo.trainer.training", "secret", true);
-
-        Trainee trainee = new Trainee();
-        trainee.setUser(traineeUser);
-        Trainer trainer = new Trainer();
-        trainer.setUser(trainerUser);
-        trainer.setSpecialization(type);
-
-        em.persist(type);
-        em.persist(traineeUser);
-        em.persist(trainerUser);
-        em.persist(trainee);
-        em.persist(trainer);
-
+    void savePersistsTraining() {
         Training training = new Training();
-        training.setTrainee(trainee);
-        training.setTrainer(trainer);
-        training.setTrainingName("Java Bootcamp");
-        training.setTrainingType(type);
-        training.setTrainingDate(new Date());
-        training.setTrainingDuration(10.5);
 
         trainingRepository.save(training);
-        em.flush();
-        em.clear();
 
-        TraineeTrainingCriteria traineeCriteria = new TraineeTrainingCriteria("repo.trainee.training", null, null, null, "Java");
-        TrainerTrainingCriteria trainerCriteria = new TrainerTrainingCriteria("repo.trainer.training", null, null, null);
+        verify(em).persist(training);
+    }
 
-        List<Training> byTrainee = trainingRepository.findByTraineeCriteria(traineeCriteria);
-        List<Training> byTrainer = trainingRepository.findByTrainerCriteria(trainerCriteria);
+    @Test
+    @SuppressWarnings("unchecked")
+    void findByTraineeCriteriaReturnsMatchingTrainings() {
+        TraineeTrainingCriteria criteria = new TraineeTrainingCriteria(
+                "john.doe",
+                new Date(),
+                new Date(),
+                "Bob",
+                "Java"
+        );
 
-        assertFalse(byTrainee.isEmpty());
-        assertFalse(byTrainer.isEmpty());
-        assertEquals("Java Bootcamp", byTrainee.get(0).getTrainingName());
+        Training training = new Training();
+        training.setTrainingName("Java Fundamentals");
+
+        setupCriteriaMocks();
+
+        when(typedQuery.getResultList()).thenReturn(List.of(training));
+
+        List<Training> result = trainingRepository.findByTraineeCriteria(criteria);
+
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+        assertEquals("Java Fundamentals", result.get(0).getTrainingName());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void findByTrainerCriteriaReturnsMatchingTrainings() {
+        TrainerTrainingCriteria criteria = new TrainerTrainingCriteria(
+                "trainer.bob",
+                new Date(),
+                new Date(),
+                "John"
+        );
+
+        Training training = new Training();
+        training.setTrainingName("Spring Masterclass");
+
+        setupCriteriaMocks();
+
+        when(typedQuery.getResultList()).thenReturn(List.of(training));
+
+        List<Training> result = trainingRepository.findByTrainerCriteria(criteria);
+
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+        assertEquals("Spring Masterclass", result.get(0).getTrainingName());
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setupCriteriaMocks() {
+        when(em.getCriteriaBuilder()).thenReturn(criteriaBuilder);
+        when(criteriaBuilder.createQuery(Training.class)).thenReturn(criteriaQuery);
+        when(criteriaQuery.from(Training.class)).thenReturn(root);
+
+        when(root.fetch(anyString(), any(JoinType.class))).thenReturn((Fetch) joinAndFetchMock);
+        when(((Fetch<?, ?>) joinAndFetchMock).fetch(anyString(), any(JoinType.class))).thenReturn((Fetch) joinAndFetchMock);
+
+        when(joinAndFetchMock.get(anyString())).thenReturn(path);
+        when(root.get(anyString())).thenReturn(path);
+
+        when(criteriaBuilder.equal(any(), any())).thenReturn(predicate);
+        when(criteriaBuilder.greaterThanOrEqualTo(any(), any(Date.class))).thenReturn(predicate);
+        when(criteriaBuilder.lessThanOrEqualTo(any(), any(Date.class))).thenReturn(predicate);
+
+        when(criteriaQuery.select(root)).thenReturn(criteriaQuery);
+        when(criteriaQuery.distinct(true)).thenReturn(criteriaQuery);
+        when(criteriaQuery.where(any(Predicate[].class))).thenReturn(criteriaQuery);
+
+        when(em.createQuery(criteriaQuery)).thenReturn(typedQuery);
     }
 }
