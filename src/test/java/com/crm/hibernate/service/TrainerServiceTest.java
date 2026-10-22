@@ -17,12 +17,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TrainerServiceTest {
@@ -74,19 +70,28 @@ class TrainerServiceTest {
 
     @Test
     void updateProfileChangesTrainerFields() {
+        // 1. Arrange
+        User user = new User("Sam", "Green", "sam.green", "secret", true);
         Trainer trainer = new Trainer();
-        trainer.setUser(new User("Sam", "Green", "sam.green", "secret", true));
+        trainer.setUser(user);
         trainer.setSpecialization(new TrainingType(7L, "Java"));
+
+        doNothing().when(authService).authenticate("sam.green", "adminPass");
+
         when(trainerRepository.findByUsername("sam.green")).thenReturn(Optional.of(trainer));
 
-        Trainer updated = trainerService.updateProfile("admin", "adminPass", "sam.green",
-                "Sam", "Green", false);
+        Trainer updated = trainerService.updateProfile(
+                "sam.green", "adminPass", "sam.green", "Sam", "Green", false
+        );
 
+        assertNotNull(updated);
         assertEquals("Java", updated.getSpecialization().getTrainingTypeName());
-        assertEquals(false, updated.getUser().getIsActive());
-        verify(trainerRepository).save(updated);
-    }
+        assertFalse(updated.getUser().getIsActive());
 
+        verify(authService).authenticate("sam.green", "adminPass");
+        verify(trainerRepository).findByUsername("sam.green");
+        verify(trainerRepository).save(trainer);
+    }
     @Test
     void getUnassignedTrainersDelegatesToRepository() {
         List<Trainer> trainers = List.of(new Trainer());

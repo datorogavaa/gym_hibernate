@@ -145,25 +145,21 @@ public class TraineeRestController {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/{username}/trainers")
+    @PutMapping("/trainers")
     public ResponseEntity<List<TraineeProfileResponseDto.TrainerDto>> updateTrainerList(
-            @PathVariable String username,
-            @RequestParam("authUser") String authUser,
-            @RequestParam("authPass") String authPass,
             @Valid @RequestBody UpdateTrainerListRequestDto request) {
-        traineeService.updateTrainersList(authUser, authPass, username, request.getTrainerUsernames());
-        Trainee trainee = traineeService.selectProfile(authUser, authPass, username);
-        List<TraineeProfileResponseDto.TrainerDto> response = trainee.getTrainers().stream()
-                .map(trainer -> new TraineeProfileResponseDto.TrainerDto(
-                        trainer.getUser().getUsername(), trainer.getUser().getFirstName(),
-                        trainer.getUser().getLastName(), trainer.getSpecialization()))
-                .toList();
+
+        List<TraineeProfileResponseDto.TrainerDto> response = traineeService.updateTrainersList(
+                request.getAuthUser(),
+                request.getAuthPass(),
+                request.getTrainerUsernames());
+
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{username}/unassigned-trainers")
     public ResponseEntity<List<TrainerSummaryDto>> getUnassignedTrainers(
-            @PathVariable String username,
+            @PathVariable("username") String username,
             @RequestParam("authUser") String authUser,
             @RequestParam("authPass") String authPass) {
         List<com.crm.hibernate.entity.Trainer> trainers =

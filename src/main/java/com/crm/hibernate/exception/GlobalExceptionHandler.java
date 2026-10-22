@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.time.Instant;
 import java.util.NoSuchElementException;
@@ -27,6 +28,18 @@ public class GlobalExceptionHandler {
         log.warn("Authentication failure: {}", ex.getMessage());
 
         return error(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<String> handleNoHandlerFound(
+            NoHandlerFoundException ex) {
+
+        log.warn("No handler found for {} {}", ex.getRequestURL(), ex.getRequestURL());
+
+        return error(
+                HttpStatus.NOT_FOUND,
+                "Resource not found: " + ex.getRequestURL()
+        );
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -128,6 +141,7 @@ public class GlobalExceptionHandler {
                 .header("Content-Type", "application/json")
                 .body(body);
     }
+
 
     private String escapeJson(String value) {
         return value

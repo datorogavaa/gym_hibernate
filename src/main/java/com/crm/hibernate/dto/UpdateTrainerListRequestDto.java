@@ -1,9 +1,10 @@
 package com.crm.hibernate.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import jakarta.validation.constraints.NotNull;
 
 import java.util.Set;
 
@@ -11,6 +12,13 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UpdateTrainerListRequestDto {
-    @NotNull
+
+    @NotBlank(message = "Username is required")
+    private String authUser;
+
+    @NotBlank(message = "Password is required")
+    private String authPass;
+
+    @NotNull(message = "Trainer usernames set cannot be null")
     private Set<String> trainerUsernames;
 }

@@ -8,11 +8,13 @@ import com.crm.hibernate.repository.TrainingTypeRepository;
 import com.crm.hibernate.security.AuthenticationService;
 import com.crm.hibernate.security.PasswordGenerator;
 import com.crm.hibernate.security.UsernameGenerator;
+import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -71,19 +73,28 @@ public class TrainerService {
 
     @Transactional
     public Trainer updateProfile(String authUser, String authPass, String targetUsername,
-                                 String firstName, String lastName, boolean isActive) {
+                                 String firstName, String lastName, boolean isActive)  {
+
         authService.authenticate(authUser, authPass);
+
+        if (!authUser.equalsIgnoreCase(targetUsername)) {
+            throw new SecurityException("You are not allowed to update another trainer's profile!");
+        }
+
         validateRequired(firstName, "First name");
         validateRequired(lastName, "Last name");
 
-        Trainer trainer = selectProfile(authUser, authPass, targetUsername);
-        trainer.getUser().setFirstName(firstName);
-        trainer.getUser().setLastName(lastName);
-        trainer.getUser().setIsActive(isActive);
+        Trainer trainer = trainerRepository.findByUsername(authUser)
+                .orElseThrow(() -> new EntityNotFoundException("Trainer profile not found for: " + authUser));
 
+        User user = trainer.getUser();
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setIsActive(isActive);
 
         trainerRepository.save(trainer);
-        log.info("Updated Trainer profile: {}", targetUsername);
+        log.info("Updated Trainer profile for logged-in user: {}", authUser);
+
         return trainer;
     }
 

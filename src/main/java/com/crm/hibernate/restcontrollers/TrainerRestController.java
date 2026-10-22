@@ -64,13 +64,15 @@ public class TrainerRestController {
         log.debug("Loading trainer profile for {}", username);
         Trainer trainer = trainerService.selectProfile(authUser, authPass, username);
 
-        List<TrainerProfileResponseDto.TraineeDto> traineeDtos = trainer.getTrainees().stream()
-                .map(trainee -> new TrainerProfileResponseDto.TraineeDto(
-                        trainee.getUser().getUsername(),
-                        trainee.getUser().getFirstName(),
-                        trainee.getUser().getLastName()
-                ))
-                .toList();
+        List<TrainerProfileResponseDto.TraineeDto> traineeDtos =
+                (trainer.getTrainees() == null) ? List.of() :
+                        trainer.getTrainees().stream()
+                                .map(trainee -> new TrainerProfileResponseDto.TraineeDto(
+                                        trainee.getUser().getUsername(),
+                                        trainee.getUser().getFirstName(),
+                                        trainee.getUser().getLastName()
+                                ))
+                                .toList();
 
         TrainerProfileResponseDto response = new TrainerProfileResponseDto(
                 trainer.getUser().getUsername(),

@@ -26,6 +26,7 @@ import java.util.Properties;
         "com.crm.hibernate.service",
         "com.crm.hibernate.security",
         "com.crm.hibernate.exception"
+
 })
 @PropertySource("classpath:application.properties")
 public class AppConfig {

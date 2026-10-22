@@ -126,7 +126,6 @@ class TrainerRestControllerTest {
 
     @Test
     void activateDeactivateTrainerUsesUserService() {
-        // Prepare request body with explicit target status
         StatusUpdateRequestDto request = new StatusUpdateRequestDto(true);
 
         ResponseEntity<Void> response = trainerRestController.activateDeactivateTrainer(

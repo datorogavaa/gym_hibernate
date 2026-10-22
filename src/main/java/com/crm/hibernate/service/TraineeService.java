@@ -1,5 +1,6 @@
 package com.crm.hibernate.service;
 
+import com.crm.hibernate.dto.TraineeProfileResponseDto;
 import com.crm.hibernate.entity.Trainee;
 import com.crm.hibernate.entity.Trainer;
 import com.crm.hibernate.entity.User;
@@ -8,6 +9,7 @@ import com.crm.hibernate.repository.TrainerRepository;
 import com.crm.hibernate.security.AuthenticationService;
 import com.crm.hibernate.security.PasswordGenerator;
 import com.crm.hibernate.security.UsernameGenerator;
+import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -68,12 +70,21 @@ public class TraineeService {
 
     @Transactional
     public Trainee updateProfile(String authUser, String authPass, String targetUsername,
-                                 String firstName, String lastName, Date dob, String address, boolean isActive) {
-        authService.authenticate(authUser, authPass);
+                                 String firstName, String lastName, Date dob,
+                                 String address, boolean isActive) {
+
+
+        if (!authUser.equalsIgnoreCase(targetUsername)) {
+            throw new SecurityException(
+                    "You are not allowed to update another trainee's profile!"
+            );
+        }
+
         validateRequired(firstName, "First name");
         validateRequired(lastName, "Last name");
 
         Trainee trainee = selectProfile(authUser, authPass, targetUsername);
+
         trainee.getUser().setFirstName(firstName);
         trainee.getUser().setLastName(lastName);
         trainee.getUser().setIsActive(isActive);
@@ -81,7 +92,9 @@ public class TraineeService {
         trainee.setAddress(address);
 
         traineeRepository.save(trainee);
-        log.info("Updated Trainee profile: {}", targetUsername);
+
+        log.info("Updated Trainee profile for logged-in user: {}", authUser);
+
         return trainee;
     }
 
@@ -108,14 +121,28 @@ public class TraineeService {
     }
 
     @Transactional
-    public void updateTrainersList(String authUser, String authPass, String traineeUsername, Set<String> trainerUsernames) {
+    public List<TraineeProfileResponseDto.TrainerDto> updateTrainersList(
+            String authUser, String authPass, Set<String> trainerUsernames) {
+
         authService.authenticate(authUser, authPass);
-        Trainee trainee = selectProfile(authUser, authPass, targetUsernameOrFallback(traineeUsername));
+
+        Trainee trainee = traineeRepository.findByUsername(authUser)
+                .orElseThrow(() -> new EntityNotFoundException("Trainee not found for user: " + authUser));
+
         List<Trainer> trainers = trainerRepository.findByUsernames(trainerUsernames);
         trainee.getTrainers().clear();
         trainee.getTrainers().addAll(trainers);
         traineeRepository.save(trainee);
-        log.info("Updated trainers for trainee {}", traineeUsername);
+
+        log.info("Updated trainers for trainee {}", authUser);
+
+        return trainee.getTrainers().stream()
+                .map(trainer -> new TraineeProfileResponseDto.TrainerDto(
+                        trainer.getUser().getUsername(),
+                        trainer.getUser().getFirstName(),
+                        trainer.getUser().getLastName(),
+                        trainer.getSpecialization()))
+                .toList();
     }
 
     @Transactional(readOnly = true)

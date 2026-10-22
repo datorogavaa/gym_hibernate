@@ -13,13 +13,16 @@ import java.util.Set;
 
 @Repository
 public class TrainerRepository {
+
     @PersistenceContext
     private EntityManager em;
 
-
     public void save(Trainer trainer) {
-        if (trainer.getId() == null) em.persist(trainer);
-        else em.merge(trainer);
+        if (trainer.getId() == null) {
+            em.persist(trainer);
+        } else {
+            em.merge(trainer);
+        }
     }
 
     public Optional<Trainer> findByUsername(String username) {
@@ -51,8 +54,14 @@ public class TrainerRepository {
     }
 
     public List<Trainer> findByUsernames(Set<String> usernames) {
-        if (usernames == null || usernames.isEmpty()) return new ArrayList<>();
-        return em.createQuery("SELECT tr FROM Trainer tr JOIN tr.user u WHERE u.username IN :usernames", Trainer.class)
+        if (usernames == null || usernames.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return em.createQuery(
+                        "SELECT DISTINCT tr FROM Trainer tr " +
+                                "JOIN FETCH tr.user u " + // <-- ჩაემატა FETCH
+                                "WHERE u.username IN :usernames",
+                        Trainer.class)
                 .setParameter("usernames", usernames)
                 .getResultList();
     }

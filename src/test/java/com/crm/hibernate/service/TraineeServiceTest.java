@@ -83,14 +83,17 @@ class TraineeServiceTest {
         trainee.setUser(new User("John", "Doe", "john.doe", "secret", true));
         trainee.setAddress("Old address");
         Date newDob = new Date();
+
         when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(trainee));
 
-        Trainee updated = traineeService.updateProfile("admin", "adminPass", "john.doe",
+        Trainee updated = traineeService.updateProfile("john.doe", "secret", "john.doe",
                 "John", "Smith", newDob, "New address", false);
 
         assertEquals("Smith", updated.getUser().getLastName());
         assertEquals("New address", updated.getAddress());
         assertFalse(updated.getUser().getIsActive());
+
+        verify(authService).authenticate("john.doe", "secret");
         verify(traineeRepository).save(updated);
     }
 
@@ -128,16 +131,20 @@ class TraineeServiceTest {
         Trainee trainee = new Trainee();
         trainee.setUser(new User("John", "Doe", "john.doe", "secret", true));
         trainee.setTrainers(new HashSet<>());
+
         Trainer trainer1 = new Trainer();
         trainer1.setUser(new User("Sam", "Smith", "sam.smith", "secret", true));
+
         Trainer trainer2 = new Trainer();
         trainer2.setUser(new User("Lee", "Brown", "lee.brown", "secret", true));
+
         when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(trainee));
         when(trainerRepository.findByUsernames(Set.of("sam.smith", "lee.brown"))).thenReturn(List.of(trainer1, trainer2));
 
-        traineeService.updateTrainersList("admin", "adminPass", "john.doe", Set.of("sam.smith", "lee.brown"));
+        traineeService.updateTrainersList("john.doe", "secret", Set.of("sam.smith", "lee.brown"));
 
         assertEquals(2, trainee.getTrainers().size());
+        verify(authService).authenticate("john.doe", "secret");
         verify(traineeRepository).save(trainee);
     }
 
