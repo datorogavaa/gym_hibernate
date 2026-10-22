@@ -118,6 +118,13 @@ public class TraineeService {
         log.info("Updated trainers for trainee {}", traineeUsername);
     }
 
+    @Transactional(readOnly = true)
+    public List<Trainer> getUnassignedTrainers(String authUser, String authPass, String traineeUsername) {
+        authService.authenticate(authUser, authPass);
+        validateRequired(traineeUsername, "Trainee username");
+        return trainerRepository.findNotAssignedToTrainee(traineeUsername);
+    }
+
     private void validateRequired(String val, String field) {
         if (val == null || val.trim().isEmpty()) {
             throw new IllegalArgumentException(field + " is required");

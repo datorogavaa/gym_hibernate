@@ -32,4 +32,24 @@ public class UserService {
         userRepository.save(user);
         log.info("Password successfully updated for user: {}", targetUsername);
     }
+
+    @Transactional
+    public void activateDeactivate(String authUser, String authPass, String targetUsername, boolean requestedState) {
+        authService.authenticate(authUser, authPass);
+        validateUsername(targetUsername);
+        User user = userRepository.findByUsername(targetUsername)
+                .orElseThrow(() -> new NoSuchElementException("User not found: " + targetUsername));
+        if (Boolean.TRUE.equals(user.getIsActive()) == requestedState) {
+            throw new IllegalArgumentException("User is already in the requested active state");
+        }
+        user.setIsActive(requestedState);
+        userRepository.save(user);
+        log.info("Set user {} active state to {}", targetUsername, requestedState);
+    }
+
+    private void validateUsername(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username is required");
+        }
+    }
 }

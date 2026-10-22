@@ -41,7 +41,9 @@ public class TrainerService {
     public Trainer createProfile(String firstName, String lastName, Long specializationId) {
         validateRequired(firstName, "First name");
         validateRequired(lastName, "Last name");
-        if (specializationId == null) throw new IllegalArgumentException("Specialization ID is required");
+        if (specializationId == null || specializationId <= 0) {
+            throw new IllegalArgumentException("Specialization ID is required and must be greater than 0");
+        }
 
         TrainingType type = trainingTypeRepository.findById(specializationId)
                 .orElseThrow(() -> new IllegalArgumentException("Specialization not found: " + specializationId));
@@ -69,20 +71,16 @@ public class TrainerService {
 
     @Transactional
     public Trainer updateProfile(String authUser, String authPass, String targetUsername,
-                                 String firstName, String lastName, Long specializationId, boolean isActive) {
+                                 String firstName, String lastName, boolean isActive) {
         authService.authenticate(authUser, authPass);
         validateRequired(firstName, "First name");
         validateRequired(lastName, "Last name");
-        if (specializationId == null) throw new IllegalArgumentException("Specialization ID is required");
 
         Trainer trainer = selectProfile(authUser, authPass, targetUsername);
-        TrainingType type = trainingTypeRepository.findById(specializationId)
-                .orElseThrow(() -> new IllegalArgumentException("Specialization not found"));
-
         trainer.getUser().setFirstName(firstName);
         trainer.getUser().setLastName(lastName);
         trainer.getUser().setIsActive(isActive);
-        trainer.setSpecialization(type);
+
 
         trainerRepository.save(trainer);
         log.info("Updated Trainer profile: {}", targetUsername);

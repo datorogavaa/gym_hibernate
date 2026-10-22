@@ -51,22 +51,6 @@ class AuthenticationServiceTest {
     }
 
     @Test
-    void validateCredentialsReturnsTrueWhenPasswordMatches() {
-        User user = new User("Alice", "Brown", "alice.brown", "secret", true);
-        when(userRepository.findByUsername("alice.brown")).thenReturn(Optional.of(user));
-
-        assertTrue(authenticationService.validateCredentials("alice.brown", "secret"));
-        assertFalse(authenticationService.validateCredentials("alice.brown", "wrong-pass"));
-    }
-
-    @Test
-    void validateCredentialsReturnsFalseWhenCredentialsAreNullOrUnknown() {
-        assertFalse(authenticationService.validateCredentials(null, "secret"));
-        assertFalse(authenticationService.validateCredentials("missing.user", "secret"));
-        assertFalse(authenticationService.validateCredentials("alice.brown", null));
-    }
-
-    @Test
     void authenticateRejectsNullCredentials() {
         assertThrows(SecurityException.class, () -> authenticationService.authenticate(null, "secret"));
         assertThrows(SecurityException.class, () -> authenticationService.authenticate("alice.brown", null));

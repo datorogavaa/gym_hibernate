@@ -2,9 +2,12 @@ package com.crm.hibernate.entity;
 
 
 import jakarta.persistence.*;
+import lombok.Data;
+
 import java.util.HashSet;
 import java.util.Set;
 
+@Data
 @Entity
 @Table(name = "trainers")
 public class Trainer {
@@ -28,17 +31,6 @@ public class Trainer {
     private Set<Training> trainings = new HashSet<>();
 
     public Trainer() {}
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public TrainingType getSpecialization() { return specialization; }
-    public void setSpecialization(TrainingType specialization) { this.specialization = specialization; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-    public Set<Trainee> getTrainees() { return trainees; }
-    public void setTrainees(Set<Trainee> trainees) { this.trainees = trainees; }
-    public Set<Training> getTrainings() { return trainings; }
-    public void setTrainings(Set<Training> trainings) { this.trainings = trainings; }
 
     @Override
     public String toString() {

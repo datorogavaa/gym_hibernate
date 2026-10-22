@@ -7,6 +7,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
@@ -20,23 +23,53 @@ class UsernameGeneratorTest {
     private UsernameGenerator usernameGenerator;
 
     @Test
-    void generateReturnsBaseUsernameWhenNoDuplicateExists() {
-        when(userRepository.countByBaseUsername("John.Doe")).thenReturn(0L);
+    void generateReturnsBaseUsernameWhenNoDuplicatesExist() {
+        when(userRepository.findUsernamesByBaseUsername("John.Doe"))
+                .thenReturn(Collections.emptyList());
 
-        assertEquals("John.Doe", usernameGenerator.generate("John", "Doe"));
+        String result = usernameGenerator.generate("John", "Doe");
+
+        assertEquals("John.Doe", result);
     }
 
     @Test
-    void generateAppendsOccurrenceCountWhenUsernameAlreadyExists() {
-        when(userRepository.countByBaseUsername("Jane.Doe")).thenReturn(2L);
+    void generateAppendsSuffixOneWhenBaseUsernameExists() {
+        when(userRepository.findUsernamesByBaseUsername("Jane.Doe"))
+                .thenReturn(List.of("Jane.Doe"));
 
-        assertEquals("Jane.Doe2", usernameGenerator.generate("Jane", "Doe"));
+        String result = usernameGenerator.generate("Jane", "Doe");
+
+        assertEquals("Jane.Doe1", result);
     }
 
     @Test
-    void generateUsesRepositoryCountForDuplicateResolution() {
-        when(userRepository.countByBaseUsername("Tom.Cruise")).thenReturn(1L);
+    void generateFillsGapWhenUserHasBeenDeleted() {
+        // Simulates Jane.Doe1 being deleted, leaving Jane.Doe and Jane.Doe2
+        when(userRepository.findUsernamesByBaseUsername("Jane.Doe"))
+                .thenReturn(List.of("Jane.Doe", "Jane.Doe2"));
 
-        assertEquals("Tom.Cruise1", usernameGenerator.generate("Tom", "Cruise"));
+        String result = usernameGenerator.generate("Jane", "Doe");
+
+        assertEquals("Jane.Doe1", result);
+    }
+
+    @Test
+    void generateIncrementsToNextAvailableSuffixWhenMultipleExist() {
+        when(userRepository.findUsernamesByBaseUsername("Tom.Cruise"))
+                .thenReturn(List.of("Tom.Cruise", "Tom.Cruise1", "Tom.Cruise2"));
+
+        String result = usernameGenerator.generate("Tom", "Cruise");
+
+        assertEquals("Tom.Cruise3", result);
+    }
+
+    @Test
+    void generateReturnsBaseUsernameWhenRepositoryReturnsNull() {
+        when(userRepository.findUsernamesByBaseUsername("Alice.Smith"))
+                .thenReturn(null);
+
+        String result = usernameGenerator.generate("Alice", "Smith");
+
+        assertEquals("Alice.Smith", result);
     }
 }

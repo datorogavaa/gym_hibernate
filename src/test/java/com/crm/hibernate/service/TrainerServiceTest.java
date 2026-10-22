@@ -74,17 +74,15 @@ class TrainerServiceTest {
 
     @Test
     void updateProfileChangesTrainerFields() {
-        TrainingType newType = new TrainingType(9L, "Spring");
         Trainer trainer = new Trainer();
         trainer.setUser(new User("Sam", "Green", "sam.green", "secret", true));
         trainer.setSpecialization(new TrainingType(7L, "Java"));
         when(trainerRepository.findByUsername("sam.green")).thenReturn(Optional.of(trainer));
-        when(trainingTypeRepository.findById(9L)).thenReturn(Optional.of(newType));
 
         Trainer updated = trainerService.updateProfile("admin", "adminPass", "sam.green",
-                "Sam", "Green", 9L, false);
+                "Sam", "Green", false);
 
-        assertEquals("Spring", updated.getSpecialization().getTrainingTypeName());
+        assertEquals("Java", updated.getSpecialization().getTrainingTypeName());
         assertEquals(false, updated.getUser().getIsActive());
         verify(trainerRepository).save(updated);
     }

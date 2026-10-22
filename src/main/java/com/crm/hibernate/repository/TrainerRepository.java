@@ -25,7 +25,13 @@ public class TrainerRepository {
     public Optional<Trainer> findByUsername(String username) {
         try {
             return Optional.of(em.createQuery(
-                            "SELECT tr FROM Trainer tr JOIN FETCH tr.user u JOIN FETCH tr.specialization WHERE u.username = :username", Trainer.class)
+                            "SELECT DISTINCT tr FROM Trainer tr " +
+                                    "JOIN FETCH tr.user u " +
+                                    "JOIN FETCH tr.specialization " +
+                                    "LEFT JOIN FETCH tr.trainees trainees " +
+                                    "LEFT JOIN FETCH trainees.user " +
+                                    "WHERE u.username = :username",
+                            Trainer.class)
                     .setParameter("username", username)
                     .getSingleResult());
         } catch (NoResultException e) {
@@ -35,10 +41,13 @@ public class TrainerRepository {
 
     public List<Trainer> findNotAssignedToTrainee(String traineeUsername) {
         return em.createQuery(
-                        "SELECT tr FROM Trainer tr WHERE tr NOT IN " +
-                                "(SELECT ttr FROM Trainee t JOIN t.trainers ttr JOIN t.user u WHERE u.username = :traineeUsername)", Trainer.class)
-                .setParameter("traineeUsername", traineeUsername)
-                .getResultList();
+                "SELECT DISTINCT tr FROM Trainer tr JOIN FETCH tr.user " +
+                        "WHERE NOT EXISTS (" +
+                        "   SELECT 1 FROM Trainee t JOIN t.trainers ttr " +
+                        "   JOIN t.user traineeUser WHERE ttr.id = tr.id AND traineeUser.username = :traineeUsername" +
+                        ")",
+                Trainer.class
+        ).setParameter("traineeUsername", traineeUsername).getResultList();
     }
 
     public List<Trainer> findByUsernames(Set<String> usernames) {

@@ -1,6 +1,8 @@
 package com.crm.hibernate.entity;
 import jakarta.persistence.*;
+import lombok.Data;
 
+@Data
 @Entity
 @Table(name = "training_types")
 public class TrainingType {
@@ -18,11 +20,6 @@ public class TrainingType {
         this.id = id;
         this.trainingTypeName = trainingTypeName;
     }
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getTrainingTypeName() { return trainingTypeName; }
-    public void setTrainingTypeName(String trainingTypeName) { this.trainingTypeName = trainingTypeName; }
 
 
     @Override

@@ -32,11 +32,4 @@ public class AuthenticationService {
             throw new SecurityException("Invalid username or password");
         }
     }
-
-    public boolean validateCredentials(String username, String password) {
-        if (username == null || password == null) return false;
-        return userRepository.findByUsername(username)
-                .map(user -> user.getPassword().equals(password))
-                .orElse(false);
-    }
 }
