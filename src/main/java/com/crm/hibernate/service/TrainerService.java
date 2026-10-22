@@ -41,7 +41,9 @@ public class TrainerService {
     public Trainer createProfile(String firstName, String lastName, Long specializationId) {
         validateRequired(firstName, "First name");
         validateRequired(lastName, "Last name");
-        if (specializationId == null) throw new IllegalArgumentException("Specialization ID is required");
+        if (specializationId == null || specializationId <= 0) {
+            throw new IllegalArgumentException("Specialization ID is required and must be greater than 0");
+        }
 
         TrainingType type = trainingTypeRepository.findById(specializationId)
                 .orElseThrow(() -> new IllegalArgumentException("Specialization not found: " + specializationId));

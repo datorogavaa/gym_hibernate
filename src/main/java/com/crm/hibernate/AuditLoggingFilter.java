@@ -46,20 +46,25 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
 
         } finally {
             long timeTaken = System.currentTimeMillis() - startTime;
+
+            // ნაბიჯი 1: ჯერ აუცილებლად უნდა გადაკოპირდეს ბუფერი რეალურ response-ში!
+            responseWrapper.copyBodyToResponse();
+
+            // ნაბიჯი 2: წაკითხვა ხდება copyBodyToResponse()-ის შემდეგ
             String requestBody = sanitize(getStringValue(requestWrapper.getContentAsByteArray(), request.getCharacterEncoding()));
             String responseBody = sanitize(getStringValue(responseWrapper.getContentAsByteArray(), response.getCharacterEncoding()));
 
             log.info("Completed Request: Status=[{}] Time=[{}ms] RequestBody=[{}] ResponseBody=[{}]",
                     response.getStatus(), timeTaken, requestBody, responseBody);
 
-            responseWrapper.copyBodyToResponse();
-
             MDC.remove(TRANSACTION_ID);
         }
-
     }
 
     private String sanitize(String body) {
+        if (body == null || body.isBlank()) {
+            return "";
+        }
         return body.replaceAll("(?i)(\"(?:password|oldPassword|newPassword|authPass)\"\\s*:\\s*\")[^\"]*(\")",
                 "$1****$2");
     }
