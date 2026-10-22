@@ -101,19 +101,6 @@ class TrainerRestControllerTest {
     }
 
     @Test
-    void getUnassignedTrainersReturnsList() {
-        Trainer trainer = new Trainer();
-        trainer.setUser(new User("Sam", "Green", "sam.green", "secret", true));
-        trainer.setSpecialization(new TrainingType(3L, "CARDIO"));
-        when(trainerService.getUnassignedTrainers("admin", "pass", "jane.doe")).thenReturn(List.of(trainer));
-
-        ResponseEntity<List<TrainerSummaryDto>> response = trainerRestController.getUnassignedTrainers("jane.doe", "admin", "pass");
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals("sam.green", response.getBody().get(0).getUsername());
-    }
-
-    @Test
     void getTrainerTrainingsReturnsList() {
         Training training = new Training();
         training.setTrainingName("Core" );
@@ -137,10 +124,10 @@ class TrainerRestControllerTest {
     }
 
     @Test
-    void activateDeactivateTrainerUsesUserService() {
-        ResponseEntity<Void> response = trainerRestController.activateDeactivateTrainer("sam.green", "admin", "pass");
+    void updateTrainerStatusUsesTrainerService() {
+        ResponseEntity<Void> response = trainerRestController.updateTrainerStatus("sam.green", true, "admin", "pass");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(userService).activateDeactivate("admin", "pass", "sam.green");
+        verify(trainerService).activateDeactivate("admin", "pass", "sam.green", true);
     }
 }

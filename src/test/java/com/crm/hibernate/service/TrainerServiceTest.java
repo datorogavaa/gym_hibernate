@@ -17,10 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -98,14 +95,26 @@ class TrainerServiceTest {
     }
 
     @Test
-    void activateDeactivateTogglesUserActiveState() {
+    void updateStatusDeactivatesTrainerWhenRequested() {
         Trainer trainer = new Trainer();
-        trainer.setUser(new User("Sam", "Green", "sam.green", "secret", true));
-        when(trainerRepository.findByUsername("sam.green")).thenReturn(Optional.of(trainer));
+        trainer.setUser(new User("Jane", "Smith", "jane.smith", "secret", true));
+        when(trainerRepository.findByUsername("jane.smith")).thenReturn(Optional.of(trainer));
 
-        trainerService.activateDeactivate("admin", "adminPass", "sam.green");
+        trainerService.activateDeactivate("admin", "adminPass", "jane.smith", false);
 
-        assertEquals(false, trainer.getUser().getIsActive());
+        assertFalse(trainer.getUser().getIsActive());
+        verify(trainerRepository).save(trainer);
+    }
+
+    @Test
+    void updateStatusActivatesTrainerWhenRequested() {
+        Trainer trainer = new Trainer();
+        trainer.setUser(new User("Jane", "Smith", "jane.smith", "secret", false));
+        when(trainerRepository.findByUsername("jane.smith")).thenReturn(Optional.of(trainer));
+
+        trainerService.activateDeactivate("admin", "adminPass", "jane.smith", true);
+
+        assertTrue(trainer.getUser().getIsActive());
         verify(trainerRepository).save(trainer);
     }
 

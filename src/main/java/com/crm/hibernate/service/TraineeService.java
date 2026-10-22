@@ -1,5 +1,6 @@
 package com.crm.hibernate.service;
 
+import com.crm.hibernate.dto.TrainerSummaryDto;
 import com.crm.hibernate.entity.Trainee;
 import com.crm.hibernate.entity.Trainer;
 import com.crm.hibernate.entity.User;
@@ -17,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class TraineeService {
@@ -69,7 +71,6 @@ public class TraineeService {
     @Transactional
     public Trainee updateProfile(String authUser, String authPass, String targetUsername,
                                  String firstName, String lastName, Date dob, String address, boolean isActive) {
-        authService.authenticate(authUser, authPass);
         validateRequired(firstName, "First name");
         validateRequired(lastName, "Last name");
 
@@ -86,18 +87,24 @@ public class TraineeService {
     }
 
     @Transactional
-    public void activateDeactivate(String authUser, String authPass, String targetUsername) {
-        authService.authenticate(authUser, authPass);
+    public void activateDeactivate(String authUser, String authPass, String targetUsername, boolean isActive) {
         Trainee trainee = selectProfile(authUser, authPass, targetUsername);
-        boolean state = !trainee.getUser().getIsActive();
-        trainee.getUser().setIsActive(state);
+        trainee.getUser().setIsActive(isActive);
         traineeRepository.save(trainee);
-        log.info("Toggled Trainee {} isActive to {}", targetUsername, state);
+
+        log.info("Updated Trainee {} isActive status to {}", targetUsername, isActive);
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<Trainer> getUnassignedTrainers(String authUser, String authPass, String traineeUsername) {
+        authService.authenticate(authUser, authPass);
+        validateRequired(traineeUsername, "Trainee username");
+        return trainerRepository.findNotAssignedToTrainee(traineeUsername);
     }
 
     @Transactional
     public void deleteProfile(String authUser, String authPass, String targetUsername) {
-        authService.authenticate(authUser, authPass);
         Trainee trainee = selectProfile(authUser, authPass, targetUsername);
 
         trainee.getTrainers().clear();
@@ -108,14 +115,28 @@ public class TraineeService {
     }
 
     @Transactional
-    public void updateTrainersList(String authUser, String authPass, String traineeUsername, Set<String> trainerUsernames) {
+    public List<TrainerSummaryDto> updateTrainersList(String authUser,
+                                                      String authPass,
+                                                      String traineeUsername,
+                                                      Set<String> trainerUsernames) {
         authService.authenticate(authUser, authPass);
         Trainee trainee = selectProfile(authUser, authPass, targetUsernameOrFallback(traineeUsername));
+
         List<Trainer> trainers = trainerRepository.findByUsernames(trainerUsernames);
         trainee.getTrainers().clear();
         trainee.getTrainers().addAll(trainers);
         traineeRepository.save(trainee);
+
         log.info("Updated trainers for trainee {}", traineeUsername);
+
+        return trainers.stream()
+                .map(trainer -> new TrainerSummaryDto(
+                        trainer.getUser().getUsername(),
+                        trainer.getUser().getFirstName(),
+                        trainer.getUser().getLastName(),
+                        trainer.getSpecialization() != null ? trainer.getSpecialization().getTrainingTypeName() : null
+                ))
+                .collect(Collectors.toList());
     }
 
     private void validateRequired(String val, String field) {

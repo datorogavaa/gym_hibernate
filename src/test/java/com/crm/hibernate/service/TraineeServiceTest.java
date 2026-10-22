@@ -112,14 +112,26 @@ class TraineeServiceTest {
     }
 
     @Test
-    void activateDeactivateTogglesUserActiveState() {
+    void updateStatusSetsUserActiveState() {
         Trainee trainee = new Trainee();
         trainee.setUser(new User("John", "Doe", "john.doe", "secret", true));
         when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(trainee));
 
-        traineeService.activateDeactivate("admin", "adminPass", "john.doe");
+        traineeService.activateDeactivate("admin", "adminPass", "john.doe", false);
 
         assertFalse(trainee.getUser().getIsActive());
+        verify(traineeRepository).save(trainee);
+    }
+
+    @Test
+    void updateStatusActivatesUserWhenRequested() {
+        Trainee trainee = new Trainee();
+        trainee.setUser(new User("John", "Doe", "john.doe", "secret", false));
+        when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(trainee));
+
+        traineeService.activateDeactivate("admin", "adminPass", "john.doe", true);
+
+        assertTrue(trainee.getUser().getIsActive());
         verify(traineeRepository).save(trainee);
     }
 

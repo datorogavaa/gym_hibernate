@@ -1,10 +1,12 @@
 package com.crm.hibernate.restcontrollers;
 
+import com.crm.hibernate.dto.ChangePasswordRequestDto;
 import com.crm.hibernate.security.AuthenticationService;
 import com.crm.hibernate.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
@@ -41,9 +43,10 @@ public class AuthenticationRestController {
     @ApiResponse(responseCode = "200", description = "Password changed")
     @PutMapping("/change-password")
     public ResponseEntity<Void> changePassword(
-            @RequestParam("username") String username,
-            @RequestParam("oldPassword") String oldPassword,
-            @RequestParam("newPassword") String newPassword) {
+          @Valid @RequestBody ChangePasswordRequestDto request) {
+        String username = request.getUsername();
+        String oldPassword = request.getOldPassword();
+        String newPassword = request.getNewPassword();
         try {
             userService.changePassword(username, oldPassword, username,newPassword );
             log.info("Password changed for user {}", username);

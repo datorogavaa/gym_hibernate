@@ -21,14 +21,26 @@ public class TrainingRepositoryImpl implements TrainingRepositoryCustom {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Training> cq = cb.createQuery(Training.class);
         Root<Training> training = cq.from(Training.class);
-        Join<Training, Trainee> traineeJoin = training.join("trainee");
-        Join<Trainee, User> traineeUser = traineeJoin.join("user");
-        Join<Training, Trainer> trainerJoin = training.join("trainer");
-        Join<Trainer, User> trainerUser = trainerJoin.join("user");
-        Join<Training, TrainingType> typeJoin = training.join("trainingType");
+
+        Fetch<Training, Trainee> traineeFetch = training.fetch("trainee", JoinType.INNER);
+        traineeFetch.fetch("user", JoinType.INNER);
+
+        Fetch<Training, Trainer> trainerFetch = training.fetch("trainer", JoinType.INNER);
+        trainerFetch.fetch("user", JoinType.INNER);
+
+        training.fetch("trainingType", JoinType.INNER);
+
+        Join<Training, Trainee> traineeJoin = training.join("trainee", JoinType.INNER);
+        Join<Trainee, User> traineeUser = traineeJoin.join("user", JoinType.INNER);
+
+        Join<Training, Trainer> trainerJoin = training.join("trainer", JoinType.INNER);
+        Join<Trainer, User> trainerUser = trainerJoin.join("user", JoinType.INNER);
+
+        Join<Training, TrainingType> typeJoin = training.join("trainingType", JoinType.INNER);
 
         List<Predicate> predicates = new ArrayList<>();
         predicates.add(cb.equal(traineeUser.get("username"), criteria.getTraineeUsername()));
+
         if (criteria.getFromDate() != null) {
             predicates.add(cb.greaterThanOrEqualTo(training.get("trainingDate"), criteria.getFromDate()));
         }
@@ -41,7 +53,10 @@ public class TrainingRepositoryImpl implements TrainingRepositoryCustom {
         if (criteria.getTrainingType() != null && !criteria.getTrainingType().isBlank()) {
             predicates.add(cb.equal(typeJoin.get("trainingTypeName"), criteria.getTrainingType()));
         }
+
+        cq.select(training).distinct(true);
         cq.where(predicates.toArray(new Predicate[0]));
+
         return entityManager.createQuery(cq).getResultList();
     }
 

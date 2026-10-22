@@ -1,5 +1,6 @@
 package com.crm.hibernate.controller;
 
+import com.crm.hibernate.dto.ChangePasswordRequestDto;
 import com.crm.hibernate.restcontrollers.AuthenticationRestController;
 import com.crm.hibernate.security.AuthenticationService;
 import com.crm.hibernate.service.UserService;
@@ -36,7 +37,13 @@ class AuthenticationRestControllerTest {
 
     @Test
     void changePasswordReturnsOkWhenChangeSucceeds() {
-        ResponseEntity<Void> response = authenticationRestController.changePassword("john.doe", "Pass12345!", "NewPass123!");
+
+        ChangePasswordRequestDto request = new ChangePasswordRequestDto();
+        request.setUsername("john.doe");
+        request.setOldPassword("Pass12345!");
+        request.setNewPassword("NewPass123!");
+
+        ResponseEntity<Void> response = authenticationRestController.changePassword(request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(userService).changePassword("john.doe", "Pass12345!", "john.doe", "NewPass123!");

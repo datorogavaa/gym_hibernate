@@ -12,5 +12,5 @@ public class TrainerSummaryDto {
     private String username;
     private String firstName;
     private String lastName;
-    private TrainingType specialization;
+    private String specialization;
 }

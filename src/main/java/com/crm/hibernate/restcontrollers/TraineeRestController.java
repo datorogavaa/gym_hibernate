@@ -10,6 +10,7 @@ import com.crm.hibernate.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,8 +39,8 @@ public class TraineeRestController {
 
     @Operation(summary = "Register a trainee", description = "Creates a trainee profile and returns generated credentials")
     @ApiResponse(responseCode = "200", description = "Created")
-    @PostMapping( "/create")
-    public ResponseEntity<TraineeResponseDto> createTrainee(@RequestBody TraineeRequestDto trainee) {
+    @PostMapping
+    public ResponseEntity<TraineeResponseDto> createTrainee(@Valid @RequestBody TraineeRequestDto trainee) {
         log.info("Creating trainee profile for {} {}", trainee.getFirstName(), trainee.getLastName());
         Trainee createdTrainee = traineeService.createProfile(
                 trainee.getFirstName(),
@@ -87,16 +88,30 @@ public class TraineeRestController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get unassigned trainers", description = "Retrieves a list of trainers not assigned to the specified trainee")
+    @GetMapping("/{username}/unassigned-trainers")
+    public ResponseEntity<List<TrainerSummaryDto>> getUnassignedTrainers(
+            @PathVariable("username") String username,
+            @RequestParam("authUser") String authUser,
+            @RequestParam("authPass") String authPass) {
+        List<com.crm.hibernate.entity.Trainer> trainers =
+                traineeService.getUnassignedTrainers(authUser, authPass, username);
+        return ResponseEntity.ok(trainers.stream()
+                .map(trainer -> new TrainerSummaryDto(
+                        trainer.getUser().getUsername(), trainer.getUser().getFirstName(),
+                        trainer.getUser().getLastName(), trainer.getSpecialization().toString()))
+                .toList());
+    }
 
 
     @Operation(summary = "Update trainee profile", description = "Updates trainee personal data and active status")
     @ApiResponse(responseCode = "200", description = "Profile updated")
-    @PutMapping("/{username}/update")
+    @PutMapping("/{username}")
     public ResponseEntity<TraineeProfileResponseDto> updateTraineeProfile(
             @PathVariable("username") String username,
             @RequestParam("authUser") String authUser,
             @RequestParam("authPass") String authPass,
-            @RequestBody TraineeRequestDto traineeRequest) {
+            @Valid @RequestBody TraineeRequestDto traineeRequest) {
 
         log.info("Updating trainee profile for {}", username);
         Trainee updatedTrainee = traineeService.updateProfile(
@@ -134,7 +149,7 @@ public class TraineeRestController {
 
     @Operation(summary = "Delete trainee profile", description = "Hard-deletes trainee profile and related records")
     @ApiResponse(responseCode = "200", description = "Profile deleted")
-    @DeleteMapping( "/{username}/delete")
+    @DeleteMapping( "/{username}")
     public ResponseEntity<Void> deleteTraineeProfile(
             @PathVariable("username") String username,
             @RequestParam("authUser") String authUser,
@@ -190,6 +205,25 @@ public class TraineeRestController {
         log.info("Toggling active status for trainee {}", username);
         userService.activateDeactivate(authUser, authPass, username);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Update trainee's trainer list", description = "Replaces the assigned trainers list for a trainee")
+    @ApiResponse(responseCode = "200", description = "Trainers list updated successfully")
+    @PutMapping("/{username}/trainers")
+    public ResponseEntity<List<TrainerSummaryDto>> updateTraineeTrainersList(
+            @PathVariable("username") String username,
+            @Valid @RequestBody UpdateTrainerListRequestDto requestDto) {
+
+        log.info("Updating trainer list for trainee {}", username);
+
+        List<TrainerSummaryDto> updatedTrainers = traineeService.updateTrainersList(
+                requestDto.getAuthUser(),
+                requestDto.getAuthPass(),
+                username,
+                requestDto.getTrainerUsernames()
+        );
+
+        return ResponseEntity.ok(updatedTrainers);
     }
 
 }

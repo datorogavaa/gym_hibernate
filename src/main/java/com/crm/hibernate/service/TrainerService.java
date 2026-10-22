@@ -86,13 +86,14 @@ public class TrainerService {
     }
 
     @Transactional
-    public void activateDeactivate(String authUser, String authPass, String targetUsername) {
+    public void activateDeactivate(String authUser, String authPass, String targetUsername, boolean isActive) {
         authService.authenticate(authUser, authPass);
         Trainer trainer = selectProfile(authUser, authPass, targetUsername);
-        boolean state = !trainer.getUser().getIsActive();
-        trainer.getUser().setIsActive(state);
+
+        trainer.getUser().setIsActive(isActive);
         trainerRepository.save(trainer);
-        log.info("Toggled Trainer {} isActive to {}", targetUsername, state);
+
+        log.info("Updated Trainer {} isActive status to {}", targetUsername, isActive);
     }
 
     @Transactional(readOnly = true)
