@@ -47,10 +47,8 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
         } finally {
             long timeTaken = System.currentTimeMillis() - startTime;
 
-            // ნაბიჯი 1: ჯერ აუცილებლად უნდა გადაკოპირდეს ბუფერი რეალურ response-ში!
             responseWrapper.copyBodyToResponse();
 
-            // ნაბიჯი 2: წაკითხვა ხდება copyBodyToResponse()-ის შემდეგ
             String requestBody = sanitize(getStringValue(requestWrapper.getContentAsByteArray(), request.getCharacterEncoding()));
             String responseBody = sanitize(getStringValue(responseWrapper.getContentAsByteArray(), response.getCharacterEncoding()));
 
