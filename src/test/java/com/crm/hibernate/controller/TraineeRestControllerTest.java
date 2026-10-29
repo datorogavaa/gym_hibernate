@@ -118,10 +118,10 @@ class TraineeRestControllerTest {
     }
 
     @Test
-    void activateDeactivateTraineeUsesUserService() {
-        ResponseEntity<Void> response = traineeRestController.activateDeactivateTrainee("john.doe", "admin", "pass");
+    void updateTraineeStatusUsesTraineeService() {
+        ResponseEntity<Void> response = traineeRestController.updateTraineeStatus("john.doe", true, "admin", "pass");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(userService).activateDeactivate("admin", "pass", "john.doe");
+        verify(traineeService).activateDeactivate("admin", "pass", "john.doe", true);
     }
 }

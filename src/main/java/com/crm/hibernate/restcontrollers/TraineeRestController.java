@@ -194,16 +194,17 @@ public class TraineeRestController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Activate or deactivate trainee", description = "Toggles a trainee active status")
+    @Operation(summary = "Activate or deactivate trainee", description = "Sets a trainee's active status explicitly")
     @ApiResponse(responseCode = "200", description = "Status updated")
     @PatchMapping("/{username}/status")
-    public ResponseEntity<Void> activateDeactivateTrainee(
+    public ResponseEntity<Void> updateTraineeStatus(
             @PathVariable("username") String username,
+            @RequestParam("isActive") boolean isActive,
             @RequestParam("authUser") String authUser,
             @RequestParam("authPass") String authPass) {
 
-        log.info("Toggling active status for trainee {}", username);
-        userService.activateDeactivate(authUser, authPass, username);
+        log.info("Updating active status for trainee {} to {}", username, isActive);
+        traineeService.activateDeactivate(authUser, authPass, username, isActive);
         return ResponseEntity.ok().build();
     }
 

@@ -36,5 +36,6 @@ build/
 # Ignore test output and temporary execution artifacts
 cp.txt
 Test Results - *.html
+
 .idea/
 target/

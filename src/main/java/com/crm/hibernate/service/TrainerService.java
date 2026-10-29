@@ -87,7 +87,6 @@ public class TrainerService {
 
     @Transactional
     public void activateDeactivate(String authUser, String authPass, String targetUsername, boolean isActive) {
-        authService.authenticate(authUser, authPass);
         Trainer trainer = selectProfile(authUser, authPass, targetUsername);
 
         trainer.getUser().setIsActive(isActive);

@@ -1,6 +1,5 @@
 package com.crm.hibernate.repository;
 
-import com.crm.hibernate.config.AppConfig;
 import com.crm.hibernate.dto.TraineeTrainingCriteria;
 import com.crm.hibernate.dto.TrainerTrainingCriteria;
 import com.crm.hibernate.entity.*;
@@ -8,17 +7,14 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-@SpringJUnitConfig(classes = AppConfig.class)
-@Transactional
+@DataJpaTest
 class TrainingRepositoryTest {
 
     @PersistenceContext

@@ -1,14 +1,12 @@
 package com.crm.hibernate.repository;
 
-import com.crm.hibernate.config.AppConfig;
 import com.crm.hibernate.entity.Trainee;
 import com.crm.hibernate.entity.User;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.util.Date;
 import java.util.Optional;
@@ -16,8 +14,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringJUnitConfig(classes = AppConfig.class)
-@Transactional
+@DataJpaTest
 class TraineeRepositoryTest {
 
     @PersistenceContext

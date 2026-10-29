@@ -15,8 +15,8 @@ class GymMetricsTest {
         metrics.recordAuthenticationAttempt();
         metrics.recordHealthCheck();
 
-        assertEquals(1.0, registry.get("gym.authentication.attempts").gauge().value());
-        assertEquals(1.0, registry.get("gym.health.checks").gauge().value());
+        assertEquals(1.0, registry.get("gym.authentication.attempts").counter().count());
+        assertEquals(1.0, registry.get("gym.health.checks").counter().count());
         assertEquals(1.0, registry.get("gym.application.events").counter().count());
     }
 }

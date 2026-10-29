@@ -3,9 +3,8 @@ package com.crm.hibernate.config;
 import jakarta.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.jpa.JpaTransactionManager;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
@@ -16,13 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringJUnitConfig(classes = AppConfig.class)
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:crm_db",
-        "spring.datasource.driverClassName=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password="
-})
+@SpringBootTest
 class AppConfigTest {
 
     @Autowired
@@ -42,7 +35,7 @@ class AppConfigTest {
         assertTrue(transactionManager instanceof JpaTransactionManager);
 
         try (Connection connection = dataSource.getConnection()) {
-            assertEquals("jdbc:h2:mem:crm_db", connection.getMetaData().getURL());
+            assertEquals("jdbc:h2:mem:crm_local", connection.getMetaData().getURL());
             assertEquals("SA", connection.getMetaData().getUserName());
         }
     }
@@ -50,7 +43,11 @@ class AppConfigTest {
     @Test
     void configUsesHibernateJpaSettings() {
         assertNotNull(entityManagerFactory.getProperties());
-        assertEquals("create-drop", entityManagerFactory.getProperties().get("hibernate.hbm2ddl.auto"));
-        assertEquals("true", entityManagerFactory.getProperties().get("hibernate.show_sql"));
+
+        Object ddlAuto = entityManagerFactory.getProperties().get("hibernate.hbm2ddl.auto");
+        Object showSql = entityManagerFactory.getProperties().get("hibernate.show_sql");
+
+        assertEquals("create-drop", String.valueOf(ddlAuto));
+        assertEquals("true", String.valueOf(showSql));
     }
 }
