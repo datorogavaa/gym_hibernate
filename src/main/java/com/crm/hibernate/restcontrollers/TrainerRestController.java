@@ -32,11 +32,9 @@ public class TrainerRestController {
 
     private final TrainerService trainerService;
     private final TrainingService trainingService;
-    private final UserService userService;
-    public TrainerRestController(TrainerService trainerService, TrainingService trainingService, UserService userService) {
+    public TrainerRestController(TrainerService trainerService, TrainingService trainingService) {
         this.trainingService = trainingService;
         this.trainerService = trainerService;
-        this.userService = userService;
     }
 
     @Operation(summary = "Register a trainer", description = "Creates a trainer profile and returns generated credentials")

@@ -18,7 +18,7 @@ public interface TrainerRepository extends JpaRepository<Trainer, Long> {
     Optional<Trainer> findByUsername(@Param("username") String username);
 
     @Query("select distinct tr from Trainer tr join fetch tr.user " +
-            "where not exists (select 1 from Trainee t join t.trainers ttr join t.user tu where ttr.id = tr.id and tu.username = :traineeUsername)")
+            "where not exists (select 1 from Trainee t join t.trainers ttr join t.user tu where  tr.user.isActive = true  AND ttr.id = tr.id and tu.username = :traineeUsername)")
     List<Trainer> findNotAssignedToTrainee(String traineeUsername);
 
     @Query("select tr from Trainer tr join tr.user u where u.username in :usernames")

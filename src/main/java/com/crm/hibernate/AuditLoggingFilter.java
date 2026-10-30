@@ -60,7 +60,6 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
             log.info("Completed Request: Status=[{}] Time=[{}ms] RequestBody=[{}] ResponseBody=[{}]",
                     response.getStatus(), timeTaken, requestBody, responseBody);
 
-            // Crucial: copy cached response payload back to the original response stream
             responseWrapper.copyBodyToResponse();
 
             MDC.remove(TRANSACTION_ID);
@@ -71,7 +70,6 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
         if (json == null || json.isBlank()) {
             return json;
         }
-        // Replaces matched sensitive key-value pairs with "key": "*****"
         return SENSITIVE_JSON_PATTERN.matcher(json).replaceAll(match -> {
             String matchStr = match.group();
             int colonIndex = matchStr.indexOf(':');
