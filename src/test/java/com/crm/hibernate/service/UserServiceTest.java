@@ -2,7 +2,6 @@ package com.crm.hibernate.service;
 
 import com.crm.hibernate.entity.User;
 import com.crm.hibernate.repository.UserRepository;
-import com.crm.hibernate.security.AuthenticationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,9 +23,6 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private AuthenticationService authService;
-
     @InjectMocks
     private UserService userService;
 
@@ -35,7 +31,7 @@ class UserServiceTest {
         User user = new User("John", "Doe", "john.doe", "oldPass", true);
         when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(user));
 
-        userService.changePassword("admin", "adminPass", "john.doe", "newSecret");
+        userService.changePassword("john.doe", "newSecret");
 
         assertEquals("newSecret", user.getPassword());
         verify(userRepository).save(user);
@@ -44,7 +40,7 @@ class UserServiceTest {
     @Test
     void changePasswordRejectsBlankNewPassword() {
         assertThrows(IllegalArgumentException.class,
-                () -> userService.changePassword("admin", "adminPass", "john.doe", "   "));
+                () -> userService.changePassword("john.doe", "   "));
         verifyNoInteractions(userRepository);
     }
 
@@ -53,16 +49,7 @@ class UserServiceTest {
         when(userRepository.findByUsername("missing.user")).thenReturn(Optional.empty());
 
         assertThrows(NoSuchElementException.class,
-                () -> userService.changePassword("admin", "adminPass", "missing.user", "newSecret"));
+                () -> userService.changePassword("missing.user", "newSecret"));
     }
 
-    @Test
-    void changePasswordAuthenticatesBeforeUpdatingPassword() {
-        User user = new User("John", "Doe", "john.doe", "oldPass", true);
-        when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(user));
-
-        userService.changePassword("admin", "adminPass", "john.doe", "newSecret");
-
-        verify(authService).authenticate("admin", "adminPass");
-    }
 }

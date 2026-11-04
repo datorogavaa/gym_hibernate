@@ -8,7 +8,6 @@ import com.crm.hibernate.entity.Training;
 import com.crm.hibernate.repository.TraineeRepository;
 import com.crm.hibernate.repository.TrainerRepository;
 import com.crm.hibernate.repository.TrainingRepository;
-import com.crm.hibernate.security.AuthenticationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -24,22 +23,18 @@ public class TrainingService {
     private final TrainingRepository trainingRepository;
     private final TraineeRepository traineeRepository;
     private final TrainerRepository trainerRepository;
-    private final AuthenticationService authService;
 
     public TrainingService(TrainingRepository trainingRepository,
                            TraineeRepository traineeRepository,
-                           TrainerRepository trainerRepository,
-                           AuthenticationService authService) {
+                           TrainerRepository trainerRepository) {
         this.trainingRepository = trainingRepository;
         this.traineeRepository = traineeRepository;
         this.trainerRepository = trainerRepository;
-        this.authService = authService;
     }
 
     @Transactional
-    public void addTraining(String authUser, String authPass, String traineeUsername, String trainerUsername,
+    public void addTraining(String traineeUsername, String trainerUsername,
                             String trainingName, Date date, Double duration) {
-        authService.authenticate(authUser, authPass);
         if (traineeUsername == null || trainerUsername == null || trainingName == null || date == null || duration == null) {
             throw new IllegalArgumentException("All training parameters are required");
         }
@@ -67,15 +62,13 @@ public class TrainingService {
     }
 
     @Transactional(readOnly = true)
-    public List<Training> getTraineeTrainings(String authUser, String authPass, TraineeTrainingCriteria criteria) {
-        authService.authenticate(authUser, authPass);
+    public List<Training> getTraineeTrainings(TraineeTrainingCriteria criteria) {
         log.debug("Fetching trainings for trainee criteria: {}", criteria.getTraineeUsername());
         return trainingRepository.findByTraineeCriteria(criteria);
     }
 
     @Transactional(readOnly = true)
-    public List<Training> getTrainerTrainings(String authUser, String authPass, TrainerTrainingCriteria criteria) {
-        authService.authenticate(authUser, authPass);
+    public List<Training> getTrainerTrainings(TrainerTrainingCriteria criteria) {
         log.debug("Fetching trainings for trainer criteria: {}", criteria.getTrainerUsername());
         return trainingRepository.findByTrainerCriteria(criteria);
     }

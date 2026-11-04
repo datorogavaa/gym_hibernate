@@ -33,17 +33,13 @@ class TrainingRestControllerTest {
                 "bob.jones",
                 "Java Bootcamp",
                 trainingDate,
-                12.5,
-                "admin",
-                "adminPass"
+                12.5
         );
 
         ResponseEntity<Void> response = trainingRestController.addTraining(request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(trainingService).addTraining(
-                "admin",
-                "adminPass",
                 "alice.brown",
                 "bob.jones",
                 "Java Bootcamp",

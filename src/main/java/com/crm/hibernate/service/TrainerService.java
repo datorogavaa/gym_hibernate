@@ -5,11 +5,11 @@ import com.crm.hibernate.entity.TrainingType;
 import com.crm.hibernate.entity.User;
 import com.crm.hibernate.repository.TrainerRepository;
 import com.crm.hibernate.repository.TrainingTypeRepository;
-import com.crm.hibernate.security.AuthenticationService;
 import com.crm.hibernate.security.PasswordGenerator;
 import com.crm.hibernate.security.UsernameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,18 +23,18 @@ public class TrainerService {
     private final TrainingTypeRepository trainingTypeRepository;
     private final UsernameGenerator usernameGen;
     private final PasswordGenerator passwordGen;
-    private final AuthenticationService authService;
+    private final PasswordEncoder passwordEncoder;
 
     public TrainerService(TrainerRepository trainerRepository,
                           TrainingTypeRepository trainingTypeRepository,
                           UsernameGenerator usernameGen,
                           PasswordGenerator passwordGen,
-                          AuthenticationService authService) {
+                          PasswordEncoder passwordEncoder) {
         this.trainerRepository = trainerRepository;
         this.trainingTypeRepository = trainingTypeRepository;
         this.usernameGen = usernameGen;
         this.passwordGen = passwordGen;
-        this.authService = authService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -48,10 +48,18 @@ public class TrainerService {
 
         String username = usernameGen.generate(firstName, lastName);
         String password = passwordGen.generate();
-        User user = new User(firstName, lastName, username, password, true);
+        User newUser = User.builder()
+                .firstName(firstName)
+                .lastName(lastName)
+                .username(username)
+                .password(passwordEncoder.encode(password))
+                .isActive(true)
+                .role("TRAINER")
+                .generatedPassword(password)
+                .build();
 
         Trainer trainer = new Trainer();
-        trainer.setUser(user);
+        trainer.setUser(newUser);
         trainer.setSpecialization(type);
 
         trainerRepository.save(trainer);
@@ -60,21 +68,19 @@ public class TrainerService {
     }
 
     @Transactional(readOnly = true)
-    public Trainer selectProfile(String authUser, String authPass, String targetUsername) {
-        authService.authenticate(authUser, authPass);
+    public Trainer selectProfile(String targetUsername) {
         validateRequired(targetUsername, "Username");
         return trainerRepository.findByUsername(targetUsername)
                 .orElseThrow(() -> new NoSuchElementException("Trainer not found"));
     }
 
     @Transactional
-    public Trainer updateProfile(String authUser, String authPass, String targetUsername,
+    public Trainer updateProfile(String targetUsername,
                                  String firstName, String lastName, boolean isActive) {
-        authService.authenticate(authUser, authPass);
         validateRequired(firstName, "First name");
         validateRequired(lastName, "Last name");
 
-        Trainer trainer = selectProfile(authUser, authPass, targetUsername);
+        Trainer trainer = selectProfile(targetUsername);
         trainer.getUser().setFirstName(firstName);
         trainer.getUser().setLastName(lastName);
         trainer.getUser().setIsActive(isActive);
@@ -86,8 +92,8 @@ public class TrainerService {
     }
 
     @Transactional
-    public void activateDeactivate(String authUser, String authPass, String targetUsername, boolean isActive) {
-        Trainer trainer = selectProfile(authUser, authPass, targetUsername);
+    public void activateDeactivate(String targetUsername, boolean isActive) {
+        Trainer trainer = selectProfile(targetUsername);
 
         trainer.getUser().setIsActive(isActive);
         trainerRepository.save(trainer);
@@ -96,8 +102,7 @@ public class TrainerService {
     }
 
     @Transactional(readOnly = true)
-    public List<Trainer> getUnassignedTrainers(String authUser, String authPass, String traineeUsername) {
-        authService.authenticate(authUser, authPass);
+    public List<Trainer> getUnassignedTrainers(String traineeUsername) {
         validateRequired(traineeUsername, "Trainee username");
         return trainerRepository.findNotAssignedToTrainee(traineeUsername);
     }

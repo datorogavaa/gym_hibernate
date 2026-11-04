@@ -1,11 +1,20 @@
 package com.crm.hibernate.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.time.LocalDateTime;
 
 @Data
 @Entity
 @Table(name = "users")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,7 +36,36 @@ public class User {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
-    public User() {}
+
+    @Builder.Default
+    @Column(name = "role", nullable = false)
+    private String role = "USER";
+
+    @Builder.Default
+    @Column(name = "failed_attempts")
+    private int failedAttempts = 0;
+
+    @Builder.Default
+    @Column(name = "account_non_locked")
+    private boolean accountNonLocked = true;
+
+    @Builder.Default
+    @Column(name = "lock_time")
+    private LocalDateTime lockTime = null;
+
+    @Transient
+    @JsonIgnore
+    private String generatedPassword;
+
+    @PrePersist
+    void applyDefaults() {
+        if (role == null) {
+            role = "USER";
+        }
+        if (failedAttempts < 0) {
+            failedAttempts = 0;
+        }
+    }
 
     public User(String firstName, String lastName, String username, String password, Boolean isActive) {
         this.firstName = firstName;
@@ -35,6 +73,7 @@ public class User {
         this.username = username;
         this.password = password;
         this.isActive = isActive;
+        this.accountNonLocked = true;
     }
 
 

@@ -6,11 +6,11 @@ import com.crm.hibernate.entity.Trainer;
 import com.crm.hibernate.entity.User;
 import com.crm.hibernate.repository.TraineeRepository;
 import com.crm.hibernate.repository.TrainerRepository;
-import com.crm.hibernate.security.AuthenticationService;
 import com.crm.hibernate.security.PasswordGenerator;
 import com.crm.hibernate.security.UsernameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,18 +27,18 @@ public class TraineeService {
     private final TrainerRepository trainerRepository;
     private final UsernameGenerator usernameGen;
     private final PasswordGenerator passwordGen;
-    private final AuthenticationService authService;
+    private final PasswordEncoder passwordEncoder;
 
     public TraineeService(TraineeRepository traineeRepository,
                           TrainerRepository trainerRepository,
                           UsernameGenerator usernameGen,
                           PasswordGenerator passwordGen,
-                          AuthenticationService authService) {
+                          PasswordEncoder passwordEncoder) {
         this.traineeRepository = traineeRepository;
         this.trainerRepository = trainerRepository;
         this.usernameGen = usernameGen;
         this.passwordGen = passwordGen;
-        this.authService = authService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -48,10 +48,17 @@ public class TraineeService {
 
         String username = usernameGen.generate(firstName, lastName);
         String password = passwordGen.generate();
-        User user = new User(firstName, lastName, username, password, true);
-
+        User newUser = User.builder()
+                .firstName(firstName)
+                .lastName(lastName)
+                .username(username)
+                .password(passwordEncoder.encode(password))
+                .isActive(true)
+                .role("TRAINEE")
+                .generatedPassword(password)
+                .build();
         Trainee trainee = new Trainee();
-        trainee.setUser(user);
+        trainee.setUser(newUser);
         trainee.setDateOfBirth(dob);
         trainee.setAddress(address);
 
@@ -61,20 +68,19 @@ public class TraineeService {
     }
 
     @Transactional(readOnly = true)
-    public Trainee selectProfile(String authUser, String authPass, String targetUsername) {
-        authService.authenticate(authUser, authPass);
+    public Trainee selectProfile(String targetUsername) {
         validateRequired(targetUsername, "Username");
         return traineeRepository.findByUsername(targetUsername)
                 .orElseThrow(() -> new NoSuchElementException("Trainee not found"));
     }
 
     @Transactional
-    public Trainee updateProfile(String authUser, String authPass, String targetUsername,
+    public Trainee updateProfile(String targetUsername,
                                  String firstName, String lastName, Date dob, String address, boolean isActive) {
         validateRequired(firstName, "First name");
         validateRequired(lastName, "Last name");
 
-        Trainee trainee = selectProfile(authUser, authPass, targetUsername);
+        Trainee trainee = selectProfile(targetUsername);
         trainee.getUser().setFirstName(firstName);
         trainee.getUser().setLastName(lastName);
         trainee.getUser().setIsActive(isActive);
@@ -87,8 +93,8 @@ public class TraineeService {
     }
 
     @Transactional
-    public void activateDeactivate(String authUser, String authPass, String targetUsername, boolean isActive) {
-        Trainee trainee = selectProfile(authUser, authPass, targetUsername);
+    public void activateDeactivate(String targetUsername, boolean isActive) {
+        Trainee trainee = selectProfile(targetUsername);
         trainee.getUser().setIsActive(isActive);
         traineeRepository.save(trainee);
 
@@ -97,15 +103,14 @@ public class TraineeService {
 
 
     @Transactional(readOnly = true)
-    public List<Trainer> getUnassignedTrainers(String authUser, String authPass, String traineeUsername) {
-        authService.authenticate(authUser, authPass);
+    public List<Trainer> getUnassignedTrainers(String traineeUsername) {
         validateRequired(traineeUsername, "Trainee username");
         return trainerRepository.findNotAssignedToTrainee(traineeUsername);
     }
 
     @Transactional
-    public void deleteProfile(String authUser, String authPass, String targetUsername) {
-        Trainee trainee = selectProfile(authUser, authPass, targetUsername);
+    public void deleteProfile(String targetUsername) {
+        Trainee trainee = selectProfile(targetUsername);
 
         trainee.getTrainers().clear();
         traineeRepository.save(trainee);
@@ -115,12 +120,9 @@ public class TraineeService {
     }
 
     @Transactional
-    public List<TrainerSummaryDto> updateTrainersList(String authUser,
-                                                      String authPass,
-                                                      String traineeUsername,
+    public List<TrainerSummaryDto> updateTrainersList(String traineeUsername,
                                                       Set<String> trainerUsernames) {
-        authService.authenticate(authUser, authPass);
-        Trainee trainee = selectProfile(authUser, authPass, targetUsernameOrFallback(traineeUsername));
+        Trainee trainee = selectProfile(targetUsernameOrFallback(traineeUsername));
 
         List<Trainer> trainers = trainerRepository.findByUsernames(trainerUsernames);
         trainee.getTrainers().clear();

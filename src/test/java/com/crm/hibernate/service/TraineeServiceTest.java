@@ -5,7 +5,6 @@ import com.crm.hibernate.entity.Trainer;
 import com.crm.hibernate.entity.User;
 import com.crm.hibernate.repository.TraineeRepository;
 import com.crm.hibernate.repository.TrainerRepository;
-import com.crm.hibernate.security.AuthenticationService;
 import com.crm.hibernate.security.PasswordGenerator;
 import com.crm.hibernate.security.UsernameGenerator;
 import org.junit.jupiter.api.Test;
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Date;
 import java.util.HashSet;
@@ -45,7 +45,7 @@ class TraineeServiceTest {
     private PasswordGenerator passwordGenerator;
 
     @Mock
-    private AuthenticationService authService;
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private TraineeService traineeService;
@@ -55,26 +55,15 @@ class TraineeServiceTest {
         Date dob = new Date();
         when(usernameGenerator.generate("John", "Doe")).thenReturn("John.Doe");
         when(passwordGenerator.generate()).thenReturn("secret123");
+        when(passwordEncoder.encode("secret123")).thenReturn("encoded-secret");
 
         Trainee created = traineeService.createProfile("John", "Doe", dob, "Main Street");
 
         assertNotNull(created);
         assertEquals("John.Doe", created.getUser().getUsername());
-        assertEquals("secret123", created.getUser().getPassword());
+        assertEquals("encoded-secret", created.getUser().getPassword());
         assertEquals("Main Street", created.getAddress());
         verify(traineeRepository).save(created);
-    }
-
-    @Test
-    void selectProfileAuthenticatesAndReturnsMatchingTrainee() {
-        Trainee trainee = new Trainee();
-        trainee.setUser(new User("John", "Doe", "john.doe", "secret", true));
-        when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(trainee));
-
-        Trainee result = traineeService.selectProfile("admin", "adminPass", "john.doe");
-
-        assertSame(trainee, result);
-        verify(authService).authenticate("admin", "adminPass");
     }
 
     @Test
@@ -85,7 +74,7 @@ class TraineeServiceTest {
         Date newDob = new Date();
         when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(trainee));
 
-        Trainee updated = traineeService.updateProfile("admin", "adminPass", "john.doe",
+        Trainee updated = traineeService.updateProfile("john.doe",
                 "John", "Smith", newDob, "New address", false);
 
         assertEquals("Smith", updated.getUser().getLastName());
@@ -105,7 +94,7 @@ class TraineeServiceTest {
         trainee.setTrainers(trainers);
         when(traineeRepository.findByUsername("jane.lane")).thenReturn(Optional.of(trainee));
 
-        traineeService.deleteProfile("admin", "adminPass", "jane.lane");
+        traineeService.deleteProfile("jane.lane");
 
         assertTrue(trainee.getTrainers().isEmpty());
         verify(traineeRepository).delete(trainee);
@@ -117,7 +106,7 @@ class TraineeServiceTest {
         trainee.setUser(new User("John", "Doe", "john.doe", "secret", true));
         when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(trainee));
 
-        traineeService.activateDeactivate("admin", "adminPass", "john.doe", false);
+        traineeService.activateDeactivate("john.doe", false);
 
         assertFalse(trainee.getUser().getIsActive());
         verify(traineeRepository).save(trainee);
@@ -129,7 +118,7 @@ class TraineeServiceTest {
         trainee.setUser(new User("John", "Doe", "john.doe", "secret", false));
         when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(trainee));
 
-        traineeService.activateDeactivate("admin", "adminPass", "john.doe", true);
+        traineeService.activateDeactivate("john.doe", true);
 
         assertTrue(trainee.getUser().getIsActive());
         verify(traineeRepository).save(trainee);
@@ -147,7 +136,7 @@ class TraineeServiceTest {
         when(traineeRepository.findByUsername("john.doe")).thenReturn(Optional.of(trainee));
         when(trainerRepository.findByUsernames(Set.of("sam.smith", "lee.brown"))).thenReturn(List.of(trainer1, trainer2));
 
-        traineeService.updateTrainersList("admin", "adminPass", "john.doe", Set.of("sam.smith", "lee.brown"));
+        traineeService.updateTrainersList("john.doe", Set.of("sam.smith", "lee.brown"));
 
         assertEquals(2, trainee.getTrainers().size());
         verify(traineeRepository).save(trainee);
@@ -155,6 +144,6 @@ class TraineeServiceTest {
 
     @Test
     void selectProfileRejectsBlankTargetUsername() {
-        assertThrows(IllegalArgumentException.class, () -> traineeService.selectProfile("admin", "adminPass", "   "));
+        assertThrows(IllegalArgumentException.class, () -> traineeService.selectProfile("   "));
     }
 }

@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.Date;
 import java.util.List;
@@ -49,7 +50,7 @@ public class TrainerRestController {
         );
         TrainerResponseDto responseDto = new TrainerResponseDto(
                 createdTrainer.getUser().getUsername(),
-                createdTrainer.getUser().getPassword()
+                createdTrainer.getUser().getGeneratedPassword()
         );
         return ResponseEntity.ok(responseDto);
 
@@ -58,14 +59,13 @@ public class TrainerRestController {
 
     @Operation(summary = "Get trainer profile", description = "Retrieves a trainer profile after authentication")
     @ApiResponse(responseCode = "200", description = "Profile retrieved")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('TRAINER') and #username == authentication.name)")
     @GetMapping("/{username}")
     public ResponseEntity<TrainerProfileResponseDto> getTrainerProfile(
-            @PathVariable("username") String username,
-            @RequestParam("authUser") String authUser,
-            @RequestParam("authPass") String authPass) {
+            @PathVariable("username") String username) {
 
         log.debug("Loading trainer profile for {}", username);
-        Trainer trainer = trainerService.selectProfile(authUser, authPass, username);
+        Trainer trainer = trainerService.selectProfile(username);
 
         List<TrainerProfileResponseDto.TraineeDto> traineeDtos = trainer.getTrainees().stream()
                 .map(trainee -> new TrainerProfileResponseDto.TraineeDto(
@@ -89,17 +89,14 @@ public class TrainerRestController {
 
     @Operation(summary = "Update trainer profile", description = "Updates trainer personal data and active status")
     @ApiResponse(responseCode = "200", description = "Profile updated")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('TRAINER') and #username == authentication.name)")
     @PutMapping("/{username}")
     public ResponseEntity<TrainerProfileResponseDto> updateTrainer(
             @PathVariable("username") String username,
-            @RequestParam("authUser") String authUser,
-            @RequestParam("authPass") String authPass,
             @Valid @RequestBody TrainerUpdateDto updateDto) {
 
         log.info("Updating trainer profile for {}", username);
         Trainer updatedTrainer = trainerService.updateProfile(
-                authUser,
-                authPass,
                 username,
                 updateDto.getFirstName(),
                 updateDto.getLastName(),
@@ -128,11 +125,10 @@ public class TrainerRestController {
 
     @Operation(summary = "Get trainer trainings", description = "Retrieves a list of trainings for the specified trainer")
     @ApiResponse(responseCode = "200", description = "Trainings retrieved")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('TRAINER') and #username == authentication.name)")
     @GetMapping("/{username}/trainings")
     public ResponseEntity<List<TrainerTrainingResponseDto>> getTrainerTrainings(
             @PathVariable("username") String username,
-            @RequestParam("authUser") String authUser,
-            @RequestParam("authPass") String authPass,
             @RequestParam(value = "periodFrom", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date periodFrom,
             @RequestParam(value = "periodTo", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date periodTo,
             @RequestParam(value = "traineeName", required = false) String traineeName) {
@@ -145,7 +141,7 @@ public class TrainerRestController {
                 traineeName
         );
 
-        List<Training> trainings = trainingService.getTrainerTrainings(authUser, authPass, criteria);
+        List<Training> trainings = trainingService.getTrainerTrainings(criteria);
 
         List<TrainerTrainingResponseDto> response = trainings.stream()
                 .map(training -> new TrainerTrainingResponseDto(
@@ -163,15 +159,14 @@ public class TrainerRestController {
 
     @Operation(summary = "Activate or deactivate trainer", description = "Sets a trainer's active status explicitly")
     @ApiResponse(responseCode = "200", description = "Status updated")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('TRAINER') and #username == authentication.name)")
     @PatchMapping("/{username}/status")
     public ResponseEntity<Void> updateTrainerStatus(
             @PathVariable("username") String username,
-            @RequestParam("isActive") boolean isActive,
-            @RequestParam("authUser") String authUser,
-            @RequestParam("authPass") String authPass) {
+            @RequestParam("isActive") boolean isActive) {
 
         log.info("Updating active status for trainer {} to {}", username, isActive);
-        trainerService.activateDeactivate(authUser, authPass, username, isActive);
+        trainerService.activateDeactivate(username, isActive);
         return ResponseEntity.ok().build();
     }
 

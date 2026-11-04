@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/trainings")
@@ -26,11 +27,12 @@ public class TrainingRestController {
 
     @Operation(summary = "Add a training", description = "Creates a training assignment between a trainee and trainer")
     @ApiResponse(responseCode = "200", description = "Training added")
+    @PreAuthorize("hasRole('ADMIN') or " +
+            "(hasRole('TRAINEE') and #request.traineeUsername == authentication.name) or " +
+            "(hasRole('TRAINER') and #request.trainerUsername == authentication.name)")
     @PostMapping
     public ResponseEntity<Void> addTraining(@RequestBody TrainingRequestDto request) {
         trainingService.addTraining(
-                request.getAuthUser(),
-                request.getAuthPass(),
                 request.getTraineeUsername(),
                 request.getTrainerUsername(),
                 request.getTrainingName(),

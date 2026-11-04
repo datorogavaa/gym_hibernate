@@ -45,6 +45,7 @@ class TrainerRestControllerTest {
     void createTrainerReturnsGeneratedCredentials() {
         Trainer trainer = new Trainer();
         trainer.setUser(new User("Alice", "Brown", "alice.brown", "secret", true));
+        trainer.getUser().setGeneratedPassword("secret");
         trainer.setSpecialization(new TrainingType(4L, "STRENGTH"));
 
         TrainerRequestDto request = new TrainerRequestDto();
@@ -71,9 +72,9 @@ class TrainerRestControllerTest {
         trainee.setUser(new User("Jane", "Doe", "jane.doe", "x", true));
         trainer.setTrainees(Set.of(trainee));
 
-        when(trainerService.selectProfile("admin", "pass", "sam.green")).thenReturn(trainer);
+        when(trainerService.selectProfile("sam.green")).thenReturn(trainer);
 
-        ResponseEntity<TrainerProfileResponseDto> response = trainerRestController.getTrainerProfile("sam.green", "admin", "pass");
+        ResponseEntity<TrainerProfileResponseDto> response = trainerRestController.getTrainerProfile("sam.green");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("sam.green", response.getBody().getUsername());
@@ -92,9 +93,9 @@ class TrainerRestControllerTest {
         updateDto.setLastName("Green");
         updateDto.setIsActive(true);
 
-        when(trainerService.updateProfile("admin", "pass", "sam.green", "Sam", "Green", true)).thenReturn(trainer);
+        when(trainerService.updateProfile("sam.green", "Sam", "Green", true)).thenReturn(trainer);
 
-        ResponseEntity<TrainerProfileResponseDto> response = trainerRestController.updateTrainer("sam.green", "admin", "pass", updateDto);
+        ResponseEntity<TrainerProfileResponseDto> response = trainerRestController.updateTrainer("sam.green", updateDto);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(true, response.getBody().isActive());
@@ -112,12 +113,10 @@ class TrainerRestControllerTest {
         training.setTrainee(trainee);
 
         when(trainingService.getTrainerTrainings(
-                org.mockito.ArgumentMatchers.eq("admin"),
-                org.mockito.ArgumentMatchers.eq("pass"),
                 org.mockito.ArgumentMatchers.any(TrainerTrainingCriteria.class)))
                 .thenReturn(List.of(training));
 
-        ResponseEntity<List<TrainerTrainingResponseDto>> response = trainerRestController.getTrainerTrainings("sam.green", "admin", "pass", null, null, null);
+        ResponseEntity<List<TrainerTrainingResponseDto>> response = trainerRestController.getTrainerTrainings("sam.green", null, null, null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(1, response.getBody().size());
@@ -125,9 +124,9 @@ class TrainerRestControllerTest {
 
     @Test
     void updateTrainerStatusUsesTrainerService() {
-        ResponseEntity<Void> response = trainerRestController.updateTrainerStatus("sam.green", true, "admin", "pass");
+        ResponseEntity<Void> response = trainerRestController.updateTrainerStatus("sam.green", true);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(trainerService).activateDeactivate("admin", "pass", "sam.green", true);
+        verify(trainerService).activateDeactivate("sam.green", true);
     }
 }

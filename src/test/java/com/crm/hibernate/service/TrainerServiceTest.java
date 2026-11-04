@@ -5,7 +5,6 @@ import com.crm.hibernate.entity.TrainingType;
 import com.crm.hibernate.entity.User;
 import com.crm.hibernate.repository.TrainerRepository;
 import com.crm.hibernate.repository.TrainingTypeRepository;
-import com.crm.hibernate.security.AuthenticationService;
 import com.crm.hibernate.security.PasswordGenerator;
 import com.crm.hibernate.security.UsernameGenerator;
 import org.junit.jupiter.api.Test;
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +37,7 @@ class TrainerServiceTest {
     private PasswordGenerator passwordGenerator;
 
     @Mock
-    private AuthenticationService authService;
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private TrainerService trainerService;
@@ -48,6 +48,7 @@ class TrainerServiceTest {
         when(trainingTypeRepository.findById(7L)).thenReturn(Optional.of(specialization));
         when(usernameGenerator.generate("Alice", "Brown")).thenReturn("Alice.Brown");
         when(passwordGenerator.generate()).thenReturn("pass123");
+        when(passwordEncoder.encode("pass123")).thenReturn("encoded-pass");
 
         Trainer created = trainerService.createProfile("Alice", "Brown", 7L);
 
@@ -58,25 +59,13 @@ class TrainerServiceTest {
     }
 
     @Test
-    void selectProfileAuthenticatesAndReturnsTrainer() {
-        Trainer trainer = new Trainer();
-        trainer.setUser(new User("Sam", "Green", "sam.green", "secret", true));
-        when(trainerRepository.findByUsername("sam.green")).thenReturn(Optional.of(trainer));
-
-        Trainer result = trainerService.selectProfile("admin", "adminPass", "sam.green");
-
-        assertSame(trainer, result);
-        verify(authService).authenticate("admin", "adminPass");
-    }
-
-    @Test
     void updateProfileChangesTrainerFields() {
         Trainer trainer = new Trainer();
         trainer.setUser(new User("Sam", "Green", "sam.green", "secret", true));
         trainer.setSpecialization(new TrainingType(7L, "Java"));
         when(trainerRepository.findByUsername("sam.green")).thenReturn(Optional.of(trainer));
 
-        Trainer updated = trainerService.updateProfile("admin", "adminPass", "sam.green",
+        Trainer updated = trainerService.updateProfile("sam.green",
                 "Sam", "Green", false);
 
         assertEquals("Java", updated.getSpecialization().getTrainingTypeName());
@@ -89,7 +78,7 @@ class TrainerServiceTest {
         List<Trainer> trainers = List.of(new Trainer());
         when(trainerRepository.findNotAssignedToTrainee("trainee.user")).thenReturn(trainers);
 
-        List<Trainer> result = trainerService.getUnassignedTrainers("admin", "adminPass", "trainee.user");
+        List<Trainer> result = trainerService.getUnassignedTrainers("trainee.user");
 
         assertEquals(trainers, result);
     }
@@ -100,7 +89,7 @@ class TrainerServiceTest {
         trainer.setUser(new User("Jane", "Smith", "jane.smith", "secret", true));
         when(trainerRepository.findByUsername("jane.smith")).thenReturn(Optional.of(trainer));
 
-        trainerService.activateDeactivate("admin", "adminPass", "jane.smith", false);
+        trainerService.activateDeactivate("jane.smith", false);
 
         assertFalse(trainer.getUser().getIsActive());
         verify(trainerRepository).save(trainer);
@@ -112,7 +101,7 @@ class TrainerServiceTest {
         trainer.setUser(new User("Jane", "Smith", "jane.smith", "secret", false));
         when(trainerRepository.findByUsername("jane.smith")).thenReturn(Optional.of(trainer));
 
-        trainerService.activateDeactivate("admin", "adminPass", "jane.smith", true);
+        trainerService.activateDeactivate("jane.smith", true);
 
         assertTrue(trainer.getUser().getIsActive());
         verify(trainerRepository).save(trainer);
@@ -127,6 +116,6 @@ class TrainerServiceTest {
 
     @Test
     void selectProfileRejectsBlankUsername() {
-        assertThrows(IllegalArgumentException.class, () -> trainerService.selectProfile("admin", "pass", "   "));
+        assertThrows(IllegalArgumentException.class, () -> trainerService.selectProfile("   "));
     }
 }

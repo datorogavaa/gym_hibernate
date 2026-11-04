@@ -1,59 +1,53 @@
 package com.crm.hibernate.restcontrollers;
 
-import com.crm.hibernate.dto.ChangePasswordRequestDto;
-import com.crm.hibernate.security.AuthenticationService;
-import com.crm.hibernate.service.UserService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.crm.hibernate.dto.LoginRequestDto;
+import com.crm.hibernate.dto.LoginResponseDto;
+import com.crm.hibernate.security.JwtService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "Authentication API", description = "Authentication and password management")
 public class AuthenticationRestController {
-    private static final Logger log = LoggerFactory.getLogger(AuthenticationRestController.class);
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
-    private final AuthenticationService authenticationService;
-    private final UserService userService;
-
-    public AuthenticationRestController(AuthenticationService authenticationService, UserService userService) {
-        this.userService = userService;
-        this.authenticationService = authenticationService;
+    public AuthenticationRestController(AuthenticationManager authenticationManager, JwtService jwtService) {
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
     }
 
-    @Operation(summary = "Login", description = "Validates username and password")
-    @ApiResponse(responseCode = "200", description = "Authentication succeeded")
-    @GetMapping("/login")
-    public ResponseEntity<Void> login(
-            @RequestParam("username") String username,
-            @RequestParam("password") String password) {
-
-        authenticationService.authenticate(username, password);
-        log.info("Successful login for user {}", username);
-        return ResponseEntity.ok().build();
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto request) {
+        UserDetails user = (UserDetails) authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.username(), request.password())
+        ).getPrincipal();
+        String token = jwtService.generateToken(user);
+        return ResponseEntity.ok(new LoginResponseDto(token, "Bearer", jwtService.getExpirationSeconds()));
     }
 
-    @Operation(summary = "Change password", description = "Changes the user's password after validating the current one")
-    @ApiResponse(responseCode = "200", description = "Password changed")
-    @PutMapping("/change-password")
-    public ResponseEntity<Void> changePassword(
-          @Valid @RequestBody ChangePasswordRequestDto request) {
-        String username = request.getUsername();
-        String oldPassword = request.getOldPassword();
-        String newPassword = request.getNewPassword();
-        try {
-            userService.changePassword(username, oldPassword, username,newPassword );
-            log.info("Password changed for user {}", username);
-            return ResponseEntity.ok().build();
-        } catch (SecurityException e) {
-            log.warn("Password change rejected for user {}", username);
-            return ResponseEntity.status(401).build();
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @org.springframework.web.bind.annotation.RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        if (token.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        jwtService.revoke(token);
+        return ResponseEntity.noContent().build();
     }
 }

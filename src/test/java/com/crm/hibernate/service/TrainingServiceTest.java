@@ -10,7 +10,6 @@ import com.crm.hibernate.entity.User;
 import com.crm.hibernate.repository.TraineeRepository;
 import com.crm.hibernate.repository.TrainerRepository;
 import com.crm.hibernate.repository.TrainingRepository;
-import com.crm.hibernate.security.AuthenticationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,9 +40,6 @@ class TrainingServiceTest {
     @Mock
     private TrainerRepository trainerRepository;
 
-    @Mock
-    private AuthenticationService authService;
-
     @InjectMocks
     private TrainingService trainingService;
 
@@ -59,7 +55,7 @@ class TrainingServiceTest {
         when(traineeRepository.findByUsername("alice.brown")).thenReturn(Optional.of(trainee));
         when(trainerRepository.findByUsername("bob.jones")).thenReturn(Optional.of(trainer));
 
-        trainingService.addTraining("admin", "adminPass", "alice.brown", "bob.jones",
+        trainingService.addTraining("alice.brown", "bob.jones",
                 "Java Bootcamp", date, 12.5);
 
         assertTrue(trainee.getTrainers().contains(trainer));
@@ -73,7 +69,7 @@ class TrainingServiceTest {
         TraineeTrainingCriteria criteria = new TraineeTrainingCriteria("alice.brown", null, null, null, null);
         when(trainingRepository.findByTraineeCriteria(criteria)).thenReturn(trainings);
 
-        List<Training> result = trainingService.getTraineeTrainings("admin", "adminPass", criteria);
+        List<Training> result = trainingService.getTraineeTrainings(criteria);
 
         assertEquals(trainings, result);
     }
@@ -84,7 +80,7 @@ class TrainingServiceTest {
         TrainerTrainingCriteria criteria = new TrainerTrainingCriteria("bob.jones", null, null, null);
         when(trainingRepository.findByTrainerCriteria(criteria)).thenReturn(trainings);
 
-        List<Training> result = trainingService.getTrainerTrainings("admin", "adminPass", criteria);
+        List<Training> result = trainingService.getTrainerTrainings(criteria);
 
         assertEquals(trainings, result);
     }
@@ -106,7 +102,7 @@ class TrainingServiceTest {
         when(traineeRepository.findByUsername("alice.brown")).thenReturn(Optional.of(trainee));
         when(trainerRepository.findByUsername("bob.jones")).thenReturn(Optional.of(trainer));
 
-        trainingService.addTraining("admin", "adminPass", "alice.brown", "bob.jones", "Java Bootcamp", date, 12.5);
+        trainingService.addTraining("alice.brown", "bob.jones", "Java Bootcamp", date, 12.5);
 
         assertEquals(1, trainee.getTrainers().size());
     }
@@ -114,8 +110,8 @@ class TrainingServiceTest {
     @Test
     void addTrainingRejectsMissingParameters() {
         assertThrows(IllegalArgumentException.class,
-                () -> trainingService.addTraining("admin", "adminPass", null, "bob.jones", "Java", new Date(), 10.0));
+                () -> trainingService.addTraining(null, "bob.jones", "Java", new Date(), 10.0));
         assertThrows(IllegalArgumentException.class,
-                () -> trainingService.addTraining("admin", "adminPass", "alice.brown", "bob.jones", null, new Date(), 10.0));
+                () -> trainingService.addTraining("alice.brown", "bob.jones", null, new Date(), 10.0));
     }
 }
