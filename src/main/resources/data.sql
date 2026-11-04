@@ -63,7 +63,8 @@ VALUES
     (1, 'John', 'Doe', 'john.doe', '$argon2id$v=19$m=16384,t=2,p=1$kHfZs/kQ8ZetnLN0A+DrHg$5RIgfhadhaaRxWhprRybBW8iK/69KhDOAmIE1WWULW0', true, 'TRAINER'),
     (2, 'Alice', 'Smith', 'alice.smith', '$argon2id$v=19$m=16384,t=2,p=1$kHfZs/kQ8ZetnLN0A+DrHg$5RIgfhadhaaRxWhprRybBW8iK/69KhDOAmIE1WWULW0', true, 'TRAINER'),
     (3, 'Bob', 'Taylor', 'bob.taylor', '$argon2id$v=19$m=16384,t=2,p=1$kHfZs/kQ8ZetnLN0A+DrHg$5RIgfhadhaaRxWhprRybBW8iK/69KhDOAmIE1WWULW0', true, 'TRAINEE'),
-    (4, 'Emma', 'Brown', 'emma.brown', '$argon2id$v=19$m=16384,t=2,p=1$kHfZs/kQ8ZetnLN0A+DrHg$5RIgfhadhaaRxWhprRybBW8iK/69KhDOAmIE1WWULW0', true, 'TRAINEE');
+    (4, 'Emma', 'Brown', 'emma.brown', '$argon2id$v=19$m=16384,t=2,p=1$kHfZs/kQ8ZetnLN0A+DrHg$5RIgfhadhaaRxWhprRybBW8iK/69KhDOAmIE1WWULW0', true, 'TRAINEE'),
+    (5, 'Admin', 'User', 'admin', '$argon2id$v=19$m=16384,t=2,p=1$kHfZs/kQ8ZetnLN0A+DrHg$5RIgfhadhaaRxWhprRybBW8iK/69KhDOAmIE1WWULW0', true, 'ADMIN');
 
 INSERT INTO trainers (id, specialization_id, user_id) VALUES
                                                           (1, 1, 1),
