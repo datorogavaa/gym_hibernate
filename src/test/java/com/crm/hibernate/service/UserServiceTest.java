@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
@@ -23,6 +24,9 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private UserService userService;
 
@@ -30,10 +34,12 @@ class UserServiceTest {
     void changePasswordUpdatesUserAndPersistsChanges() {
         User user = new User("John", "Doe", "john.doe", "oldPass", true);
         when(userRepository.findByUsername("john.doe")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("newSecret")).thenReturn("encoded-new-secret");
 
         userService.changePassword("john.doe", "newSecret");
 
-        assertEquals("newSecret", user.getPassword());
+        assertEquals("encoded-new-secret", user.getPassword());
+        verify(passwordEncoder).encode("newSecret");
         verify(userRepository).save(user);
     }
 

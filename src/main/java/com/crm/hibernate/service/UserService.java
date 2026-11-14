@@ -4,6 +4,7 @@ import com.crm.hibernate.entity.User;
 import com.crm.hibernate.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.NoSuchElementException;
@@ -12,9 +13,11 @@ import java.util.NoSuchElementException;
 public class UserService {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -24,7 +27,7 @@ public class UserService {
         }
         User user = userRepository.findByUsername(targetUsername)
                 .orElseThrow(() -> new NoSuchElementException("User not found: " + targetUsername));
-        user.setPassword(newPassword);
+        user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         log.info("Password successfully updated for user: {}", targetUsername);
     }

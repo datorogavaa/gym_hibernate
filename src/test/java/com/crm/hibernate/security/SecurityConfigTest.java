@@ -13,6 +13,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @ExtendWith(MockitoExtension.class)
 class SecurityConfigTest {
@@ -38,5 +39,20 @@ class SecurityConfigTest {
 
         assertTrue(details.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_TRAINEE")));
+    }
+
+    @Test
+    void userDetailsServiceMapsPersistedAccountState() {
+        User user = new User("Bob", "Taylor", "bob.taylor", "encoded", false);
+        user.setRole("TRAINEE");
+        user.setAccountNonLocked(false);
+        when(userRepository.findByUsername("bob.taylor")).thenReturn(Optional.of(user));
+
+        UserDetails details = new SecurityConfig(userRepository, bruteForceService, jwtAuthenticationFilter)
+                .userDetailsService()
+                .loadUserByUsername("bob.taylor");
+
+        assertFalse(details.isAccountNonLocked());
+        assertFalse(details.isEnabled());
     }
 }

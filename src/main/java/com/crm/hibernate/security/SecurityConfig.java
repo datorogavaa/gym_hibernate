@@ -165,6 +165,8 @@ public class SecurityConfig {
                     .username(user.getUsername())
                     .password(user.getPassword())
                     .roles(user.getRole())
+                    .accountLocked(!user.isAccountNonLocked())
+                    .disabled(!Boolean.TRUE.equals(user.getIsActive()))
                     .build();
         };
     }
