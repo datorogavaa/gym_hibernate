@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,7 +30,9 @@ public class AuthenticationRestController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto request) {
         UserDetails user = (UserDetails) authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password())
+                new UsernamePasswordAuthenticationToken(
+                        request.username().trim().toLowerCase(Locale.ROOT),
+                        request.password())
         ).getPrincipal();
         String token = jwtService.generateToken(user);
         return ResponseEntity.ok(new LoginResponseDto(token, "Bearer", jwtService.getExpirationSeconds()));

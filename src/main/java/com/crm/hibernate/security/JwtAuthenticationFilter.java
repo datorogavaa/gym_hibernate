@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Locale;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -37,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = header.substring(7).trim();
             if (!token.isEmpty() && SecurityContextHolder.getContext().getAuthentication() == null) {
                 try {
-                    String username = jwtService.extractUsername(token);
+                    String username = jwtService.extractUsername(token).trim().toLowerCase(Locale.ROOT);
                     UserDetails userDetails = userDetailsServiceProvider.getObject()
                             .loadUserByUsername(username);
                     if (jwtService.isValid(token, userDetails)) {

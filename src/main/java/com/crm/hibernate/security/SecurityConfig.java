@@ -33,6 +33,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 @Configuration
 @EnableMethodSecurity
@@ -153,7 +154,7 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> {
-            com.crm.hibernate.entity.User user = userRepository.findByUsername(username)
+            com.crm.hibernate.entity.User user = userRepository.findByUsername(username.trim().toLowerCase(Locale.ROOT))
                     .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
 

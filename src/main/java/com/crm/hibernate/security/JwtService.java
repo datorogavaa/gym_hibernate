@@ -13,6 +13,7 @@ import javax.crypto.SecretKey;
 import java.time.Duration;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -38,7 +39,7 @@ public class JwtService {
                 .toList();
 
         return Jwts.builder()
-                .subject(userDetails.getUsername())
+                .subject(userDetails.getUsername().trim().toLowerCase(Locale.ROOT))
                 .id(UUID.randomUUID().toString())
                 .claim("roles", roles)
                 .issuedAt(issuedAt)
@@ -48,12 +49,12 @@ public class JwtService {
     }
 
     public String extractUsername(String token) {
-        return parseClaims(token).getSubject();
+        return parseClaims(token).getSubject().trim().toLowerCase(Locale.ROOT);
     }
 
     public boolean isValid(String token, UserDetails userDetails) {
         Claims claims = parseClaims(token);
-        return userDetails.getUsername().equals(claims.getSubject())
+        return userDetails.getUsername().equalsIgnoreCase(claims.getSubject())
                 && claims.getExpiration().after(new Date())
                 && !isRevoked(claims);
     }

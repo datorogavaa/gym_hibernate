@@ -10,6 +10,8 @@ import com.crm.hibernate.entity.User;
 import com.crm.hibernate.repository.TraineeRepository;
 import com.crm.hibernate.repository.TrainerRepository;
 import com.crm.hibernate.repository.TrainingRepository;
+import com.crm.hibernate.integration.client.WorkloadClient;
+import com.crm.hibernate.integration.service.WorkloadNotifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,12 +21,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +43,12 @@ class TrainingServiceTest {
 
     @Mock
     private TrainerRepository trainerRepository;
+
+    @Mock
+    private WorkloadNotifier workloadNotifier;
+
+    @Mock
+    private WorkloadClient workloadClient;
 
     @InjectMocks
     private TrainingService trainingService;
@@ -61,6 +71,10 @@ class TrainingServiceTest {
         assertTrue(trainee.getTrainers().contains(trainer));
         verify(trainingRepository).save(any(Training.class));
         verify(traineeRepository).save(trainee);
+        verify(workloadNotifier).notify(
+                eq("bob.jones"), eq("Bob"), eq("Jones"), eq(true),
+                any(java.time.LocalDate.class), eq(12.5),
+                eq(com.crm.hibernate.integration.client.TrainerWorkloadRequest.ActionType.ADD));
     }
 
     @Test
@@ -83,6 +97,23 @@ class TrainingServiceTest {
         List<Training> result = trainingService.getTrainerTrainings(criteria);
 
         assertEquals(trainings, result);
+    }
+
+    @Test
+    void getTrainerWorkloadDelegatesToWorkloadClient() {
+        Map<String, Object> workload = Map.of("trainerUsername", "bob.jones");
+        when(workloadClient.getWorkload("bob.jones")).thenReturn(workload);
+
+        assertEquals(workload, trainingService.getTrainerWorkload("bob.jones"));
+    }
+
+    @Test
+    void getTrainerMonthlyHoursDelegatesToWorkloadClient() {
+        Map<String, Object> monthly = Map.of("total", 12L);
+        when(workloadClient.getMonthlyHours("bob.jones", 2026, 11)).thenReturn(monthly);
+
+        assertEquals(monthly,
+                trainingService.getTrainerMonthlyHours("bob.jones", 2026, 11));
     }
 
     @Test

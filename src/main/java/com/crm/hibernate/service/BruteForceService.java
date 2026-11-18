@@ -4,6 +4,7 @@ import com.crm.hibernate.entity.User;
 import com.crm.hibernate.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Service
 public class BruteForceService {
@@ -18,7 +19,7 @@ public class BruteForceService {
     }
 
     public void loginFailed(String username) {
-        userRepository.findByUsername(username).ifPresent(user -> {
+        userRepository.findByUsername(username.trim().toLowerCase(Locale.ROOT)).ifPresent(user -> {
             if (!user.isAccountNonLocked()) {
                 if (unlockWhenTimeExpired(user)) {
                     user.setFailedAttempts(1);
@@ -41,7 +42,7 @@ public class BruteForceService {
     }
 
     public void loginSucceeded(String username) {
-        userRepository.findByUsername(username).ifPresent(user -> {
+        userRepository.findByUsername(username.trim().toLowerCase(Locale.ROOT)).ifPresent(user -> {
             if (user.getFailedAttempts() > 0 || !user.isAccountNonLocked()) {
                 user.setFailedAttempts(0);
                 user.setAccountNonLocked(true);

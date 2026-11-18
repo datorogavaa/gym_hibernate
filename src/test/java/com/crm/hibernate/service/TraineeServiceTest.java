@@ -5,6 +5,8 @@ import com.crm.hibernate.entity.Trainer;
 import com.crm.hibernate.entity.User;
 import com.crm.hibernate.repository.TraineeRepository;
 import com.crm.hibernate.repository.TrainerRepository;
+import com.crm.hibernate.repository.TrainingRepository;
+import com.crm.hibernate.integration.service.WorkloadNotifier;
 import com.crm.hibernate.security.PasswordGenerator;
 import com.crm.hibernate.security.UsernameGenerator;
 import org.junit.jupiter.api.Test;
@@ -46,6 +48,12 @@ class TraineeServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private TrainingRepository trainingRepository;
+
+    @Mock
+    private WorkloadNotifier workloadNotifier;
 
     @InjectMocks
     private TraineeService traineeService;
@@ -93,6 +101,7 @@ class TraineeServiceTest {
         trainers.add(trainer);
         trainee.setTrainers(trainers);
         when(traineeRepository.findByUsername("jane.lane")).thenReturn(Optional.of(trainee));
+        when(trainingRepository.findByTrainee(trainee)).thenReturn(List.of());
 
         traineeService.deleteProfile("jane.lane");
 

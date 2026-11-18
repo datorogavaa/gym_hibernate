@@ -3,9 +3,13 @@ package com.crm.hibernate.service;
 import com.crm.hibernate.dto.TrainerSummaryDto;
 import com.crm.hibernate.entity.Trainee;
 import com.crm.hibernate.entity.Trainer;
+import com.crm.hibernate.entity.Training;
 import com.crm.hibernate.entity.User;
+import com.crm.hibernate.integration.client.TrainerWorkloadRequest;
+import com.crm.hibernate.integration.service.WorkloadNotifier;
 import com.crm.hibernate.repository.TraineeRepository;
 import com.crm.hibernate.repository.TrainerRepository;
+import com.crm.hibernate.repository.TrainingRepository;
 import com.crm.hibernate.security.PasswordGenerator;
 import com.crm.hibernate.security.UsernameGenerator;
 import org.slf4j.Logger;
@@ -14,10 +18,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,12 +32,19 @@ public class TraineeService {
     private final UsernameGenerator usernameGen;
     private final PasswordGenerator passwordGen;
     private final PasswordEncoder passwordEncoder;
+    private final TrainingRepository trainingRepository;
+    private final WorkloadNotifier workloadNotifier;
+
 
     public TraineeService(TraineeRepository traineeRepository,
                           TrainerRepository trainerRepository,
                           UsernameGenerator usernameGen,
                           PasswordGenerator passwordGen,
-                          PasswordEncoder passwordEncoder) {
+                          PasswordEncoder passwordEncoder,
+                          TrainingRepository trainingRepository,
+                          WorkloadNotifier workloadNotifier) {
+        this.trainingRepository = trainingRepository;
+        this.workloadNotifier = workloadNotifier;
         this.traineeRepository = traineeRepository;
         this.trainerRepository = trainerRepository;
         this.usernameGen = usernameGen;
@@ -109,14 +120,34 @@ public class TraineeService {
     }
 
     @Transactional
-    public void deleteProfile(String targetUsername) {
-        Trainee trainee = selectProfile(targetUsername);
+    public void deleteProfile(String username) {
+        Trainee trainee = traineeRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("Trainee not found"));
 
+        // 1. copy the trainings BEFORE deleting (they are gone afterward)
+        List<Training> trainings = new ArrayList<>(trainingRepository.findByTrainee(trainee));
+        // if you have no such repository method, use: new ArrayList<>(trainee.getTrainings())
+
+        // 2. clear associations before deleting
         trainee.getTrainers().clear();
-        traineeRepository.save(trainee);
-
         traineeRepository.delete(trainee);
-        log.info("Cascade deleted Trainee and associated records: {}", targetUsername);
+
+        // 3. notify the workload service for each removed training
+        for (Training t : trainings) {
+            Trainer trainer = t.getTrainer();
+            LocalDate date = Instant.ofEpochMilli(t.getTrainingDate().getTime())
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+
+            workloadNotifier.notify(
+                    trainer.getUser().getUsername(),
+                    trainer.getUser().getFirstName(),
+                    trainer.getUser().getLastName(),
+                    trainer.getUser().getIsActive(),          // your real getter name
+                    date,
+                    t.getTrainingDuration(),
+                    TrainerWorkloadRequest.ActionType.DELETE);
+        }
     }
 
     @Transactional
