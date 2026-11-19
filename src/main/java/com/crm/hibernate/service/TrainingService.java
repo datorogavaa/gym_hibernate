@@ -101,12 +101,10 @@ public class TrainingService {
         return trainingRepository.findByTrainerCriteria(criteria);
     }
 
-    @Transactional(readOnly = true)
     public Map<String, Object> getTrainerWorkload(String username) {
         return workloadClient.getWorkload(username);
     }
 
-    @Transactional(readOnly = true)
     public Map<String, Object> getTrainerMonthlyHours(String username, int year, int month) {
         return workloadClient.getMonthlyHours(username, year, month);
     }

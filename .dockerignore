@@ -9,3 +9,7 @@ build/
 Dockerfile
 docker-compose.yml
 README.md
+target
+.git
+.idea
+*.iml

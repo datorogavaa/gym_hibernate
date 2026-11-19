@@ -17,6 +17,7 @@ import org.springframework.web.util.ContentCachingResponseWrapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * Transaction-level logging: generates (or accepts) a transactionId, puts it into MDC so every log line
@@ -30,6 +31,10 @@ public class TransactionLoggingFilter extends OncePerRequestFilter {
     public static final String TRANSACTION_HEADER = "X-Transaction-Id";
     public static final String MDC_KEY = "transactionId";
     private static final Logger log = LoggerFactory.getLogger(TransactionLoggingFilter.class);
+    private static final Pattern PASSWORD_FIELD_PATTERN = Pattern.compile(
+            "(\"[^\"\\\\]*password[^\"\\\\]*\"\\s*:\\s*)(?:\"(?:\\\\.|[^\"\\\\])*\"|[^,}\\]\\s]+)",
+            Pattern.CASE_INSENSITIVE
+    );
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -49,7 +54,8 @@ public class TransactionLoggingFilter extends OncePerRequestFilter {
         try {
             chain.doFilter(req, res);
         } finally {
-            String reqBody = new String(req.getContentAsByteArray(), StandardCharsets.UTF_8);
+            String reqBody = sanitizePassword(
+                    new String(req.getContentAsByteArray(), StandardCharsets.UTF_8));
             String resBody = new String(res.getContentAsByteArray(), StandardCharsets.UTF_8);
             log.info("[transaction] END {} {} request={} -> status={} response={}",
                     request.getMethod(), request.getRequestURI(), reqBody, res.getStatus(), resBody);
@@ -57,5 +63,12 @@ public class TransactionLoggingFilter extends OncePerRequestFilter {
             MDC.remove(MDC_KEY);
         }
     }
-}
 
+    static String sanitizePassword(String body) {
+        if (body == null || body.isBlank()) {
+            return body;
+        }
+        return PASSWORD_FIELD_PATTERN.matcher(body)
+                .replaceAll(match -> match.group(1) + "\"*****\"");
+    }
+}
