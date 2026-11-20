@@ -12,10 +12,6 @@ import java.util.Map;
         fallbackFactory = WorkloadClientFallbackFactory.class)
 
 public interface WorkloadClient {
-
-    @PostMapping("/api/trainers/workloads")
-    void updateWorkload(@RequestBody TrainerWorkloadRequest request);
-
     @GetMapping("/api/trainers/workloads/{username}")
     Map<String, Object> getWorkload(@PathVariable("username") String username);
 

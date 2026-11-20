@@ -1,5 +1,12 @@
 HELP.md
 target/
+data/*.mv.db
+data/*.trace.db
+*.lock.db
+*.log
+logs/
+.env
+!.env.example
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

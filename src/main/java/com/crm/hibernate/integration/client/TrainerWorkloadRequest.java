@@ -8,7 +8,7 @@ public record TrainerWorkloadRequest(
         String trainerLastName,
         Boolean isActive,
         LocalDate trainingDate,
-        Double trainingDuration,
+        Integer trainingDuration,
         ActionType actionType) {
 
     public enum ActionType { ADD, DELETE }

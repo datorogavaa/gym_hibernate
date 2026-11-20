@@ -8,9 +8,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * Circuit breaker fallback: the main business operation (add/delete training) must not fail
- * because the reporting microservice is down, so we log and continue.
- * For guaranteed delivery consider an outbox table + retry job.
+ * Circuit breaker fallback for workload query operations.
  */
 @Component
 public class WorkloadClientFallbackFactory implements FallbackFactory<WorkloadClient> {
@@ -20,12 +18,6 @@ public class WorkloadClientFallbackFactory implements FallbackFactory<WorkloadCl
     @Override
     public WorkloadClient create(Throwable cause) {
         return new WorkloadClient() {
-
-            @Override
-            public void updateWorkload(TrainerWorkloadRequest request) {
-                log.error("[fallback] workload service unavailable, update NOT delivered: {} cause={}",
-                        request, cause.toString());
-            }
 
             @Override
             public Map<String, Object> getWorkload(String username) {
