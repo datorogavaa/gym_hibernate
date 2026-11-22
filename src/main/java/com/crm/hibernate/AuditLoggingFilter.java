@@ -1,6 +1,9 @@
 package com.crm.hibernate;
 
-
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -8,10 +11,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.UUID;
@@ -29,17 +28,34 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
     );
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return request.getRequestURI().startsWith("/actuator/health");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        String transactionId = request.getHeader(TRANSACTION_HEADER);
+        String existingMdcTxId = MDC.get(TRANSACTION_ID);
+        boolean ownsMdcValue = false;
+        String transactionId = existingMdcTxId;
+
+        if (transactionId == null || transactionId.isBlank()) {
+            transactionId = request.getHeader(TRANSACTION_HEADER);
+        }
         if (transactionId == null || transactionId.isBlank()) {
             transactionId = UUID.randomUUID().toString();
         }
 
-        MDC.put(TRANSACTION_ID, transactionId);
-        response.addHeader(TRANSACTION_HEADER, transactionId);
+        if (existingMdcTxId == null || existingMdcTxId.isBlank()) {
+            MDC.put(TRANSACTION_ID, transactionId);
+            ownsMdcValue = true;
+        }
+
+        if (response.getHeader(TRANSACTION_HEADER) == null) {
+            response.setHeader(TRANSACTION_HEADER, transactionId);
+        }
 
         ContentCachingRequestWrapper requestWrapper = new ContentCachingRequestWrapper(request);
         ContentCachingResponseWrapper responseWrapper = new ContentCachingResponseWrapper(response);
@@ -62,7 +78,9 @@ public class AuditLoggingFilter extends OncePerRequestFilter {
 
             responseWrapper.copyBodyToResponse();
 
-            MDC.remove(TRANSACTION_ID);
+            if (ownsMdcValue) {
+                MDC.remove(TRANSACTION_ID);
+            }
         }
     }
 
