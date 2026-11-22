@@ -6,7 +6,7 @@ data/*.trace.db
 *.log
 logs/
 .env
-!.env.example
+!.env
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
